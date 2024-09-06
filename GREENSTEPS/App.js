@@ -1,8 +1,26 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, Image, ImageBackground, TouchableOpacity} from 'react-native';
+import { doc, setDoc } from "firebase/firestore"; 
+import { db } from "./bd/firebaseconfig.js"
 
 export default function App() {
+
+// Suponiendo que ya has inicializado Firestore como `db`
+const addUser = async () => {
+  try {
+    await setDoc(doc(db, "usuarios", "2"), {
+      contraseña: "12345678",
+      correo_electronico: "eliab@gmail.com",
+      foto_perfil: "eliab.png",
+      nombre: "Eliab Javier Selva Cruz"
+    });
+    console.log("Documento agregado correctamente.");
+  } catch (error) {
+    console.error("Error al agregar el documento: ", error);
+  }
+};
+
   return (
     <View style={styles.container}>
        <ImageBackground
@@ -24,7 +42,7 @@ export default function App() {
       </View>
 
       <View style={styles.bottomContent}>
-        <TouchableOpacity style={styles.button} onPress={() => alert('Botón con fondo presionado')}>
+        <TouchableOpacity style={styles.button} onPress={addUser}>
           <Text style={styles.buttonText}>Inicio</Text>
         </TouchableOpacity>
       </View>
