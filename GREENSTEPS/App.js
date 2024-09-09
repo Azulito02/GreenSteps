@@ -1,52 +1,72 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Image, ImageBackground, TouchableOpacity} from 'react-native';
+import { StyleSheet, Text, View, Image, ImageBackground, TouchableOpacity } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
 import { doc, setDoc } from "firebase/firestore"; 
 import { db } from "./bd/firebaseconfig.js"
 
-export default function App() {
+// Importa la pantalla de inicio de sesión
+import LoginScreen from './Screens/LoginScreen.js';
 
-// Suponiendo que ya has inicializado Firestore como `db`
-const addUser = async () => {
-  try {
-    await setDoc(doc(db, "usuarios", "2"), {
-      contraseña: "12345678",
-      correo_electronico: "eliab@gmail.com",
-      foto_perfil: "eliab.png",
-      nombre: "Eliab Javier Selva Cruz"
-    });
-    console.log("Documento agregado correctamente.");
-  } catch (error) {
-    console.error("Error al agregar el documento: ", error);
-  }
-};
+const Stack = createStackNavigator();
+
+function HomeScreen({ navigation }) {
+
+  const addUser = async () => {
+    try {
+      await setDoc(doc(db, "usuarios", "2"), {
+        contraseña: "12345678",
+        correo_electronico: "eliab@gmail.com",
+        foto_perfil: "eliab.png",
+        nombre: "Eliab Javier Selva Cruz"
+      });
+      console.log("Documento agregado correctamente.");
+    } catch (error) {
+      console.error("Error al agregar el documento: ", error);
+    }
+  };
 
   return (
     <View style={styles.container}>
-       <ImageBackground
+      <ImageBackground
         source={require('./IMAGENES/atras.png')}
         style={styles.background}
       >
-      <Image 
-        source={require('./IMAGENES/logo0.png')} 
-        style={styles.logo}
-      />
-      <Text style={styles.texto}>
-        Green
-        <Text style={styles.textBlue}>Step</Text>
+        <Image 
+          source={require('./IMAGENES/logo0.png')} 
+          style={styles.logo}
+        />
+        <Text style={styles.texto}>
+          Green
+          <Text style={styles.textBlue}>Step</Text>
         </Text>
-        </ImageBackground>
+      </ImageBackground>
 
-        <View style={styles.topContent}>
-        <Text style={styles.topText}> Inicia sesión para descubrir cómo tus acciones diarias pueden marcar la diferencia. Juntos, podemos crear un futuro más verde y sostenible</Text>
+      <View style={styles.topContent}>
+        <Text style={styles.topText}>Inicia sesión para descubrir cómo tus acciones diarias pueden marcar la diferencia. Juntos, podemos crear un futuro más verde y sostenible</Text>
       </View>
 
       <View style={styles.bottomContent}>
-        <TouchableOpacity style={styles.button} onPress={addUser}>
+        <TouchableOpacity 
+          style={styles.button} 
+          onPress={() => navigation.navigate('Login')}
+        >
           <Text style={styles.buttonText}>Inicio</Text>
         </TouchableOpacity>
       </View>
     </View>
+  );
+}
+
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="Home">
+        <Stack.Screen name="Home" component={HomeScreen} options={{headerShown: false}} />
+        <Stack.Screen name="Login" component={LoginScreen} options={{title: 'Iniciar Sesión'}} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
 
@@ -58,15 +78,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   background: {
-    width: '100%',     // Ocupa todo el ancho de la pantalla
-    height: '80%',     // Ocupa la mitad superior de la pantalla
+    width: '100%',
+    height: '80%',
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'absolute',  // Posiciona la imagen en la parte superior
-    top: 0,                // Ancla la imagen en la parte superior
+    position: 'absolute',
+    top: 0,
     left: 0,
   },
-
   logo: {
     width: 250,
     height: 250,
@@ -83,32 +102,32 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 50,
     color: 'blue',
-},
-topContent: {
-  marginTop: '120%',  // Desplaza el texto debajo de la imagen de fondo
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-topText: {
-  fontSize: 15,
-  color: 'black',
-},
-bottomContent: {
-  position: 'absolute',
-  bottom: 70,
-  width: '100%',
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-button: {
-  backgroundColor: '#F9DBAE',  // Fondo verde del botón
-  paddingVertical: 15,
-  paddingHorizontal: 85,
-  borderRadius: 10,
-},
-buttonText: {
-  color: 'blue',  // Color del texto del botón
-  fontSize: 32,
-  fontWeight: 'bold',
-},
+  },
+  topContent: {
+    marginTop: '120%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  topText: {
+    fontSize: 15,
+    color: 'black',
+  },
+  bottomContent: {
+    position: 'absolute',
+    bottom: 70,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  button: {
+    backgroundColor: '#F9DBAE',
+    paddingVertical: 15,
+    paddingHorizontal: 85,
+    borderRadius: 10,
+  },
+  buttonText: {
+    color: 'blue',
+    fontSize: 32,
+    fontWeight: 'bold',
+  },
 });
