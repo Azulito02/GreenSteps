@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, TextInput, Button, Text } from 'react-native';
 
+
+
+
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  
 
   const handleLogin = () => {
     // Aquí iría la lógica de autenticación
     console.log('Email:', email);
     console.log('Password:', password);
-  };
+
+    // Navegar a la pantalla Topnews
+    navigation.navigate('GreenSteps');
+  };  
 
   return (
     <View style={styles.container}>
@@ -29,7 +36,7 @@ export default function LoginScreen({ navigation }) {
         secureTextEntry
       />
       <Button title="Iniciar Sesión" onPress={handleLogin} />
-      <Text style={styles.registerText} onPress={() => navigation.navigate('Register')}>
+      <Text style={styles.registerText} onPress={() => navigation.navigate('Login')}>
         ¿No tienes una cuenta? Regístrate
       </Text>
     </View>

@@ -5,11 +5,11 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { doc, setDoc } from "firebase/firestore"; 
 import { db } from "./bd/firebaseconfig.js"
-
-// Importa la pantalla de inicio de sesión
+import GreenSteps from './Screens/GreenSteps.js';
 import LoginScreen from './Screens/LoginScreen.js';
 
 const Stack = createStackNavigator();
+
 
 function HomeScreen({ navigation }) {
 
@@ -18,8 +18,8 @@ function HomeScreen({ navigation }) {
       await setDoc(doc(db, "usuarios", "2"), {
         contraseña: "12345678",
         correo_electronico: "eliab@gmail.com",
-        foto_perfil: "eliab.png",
-        nombre: "Eliab Javier Selva Cruz"
+        foto_perfil: "milton.png",
+        nombre: "Milton Augusto Oporta Lopez"
       });
       console.log("Documento agregado correctamente.");
     } catch (error) {
@@ -44,7 +44,7 @@ function HomeScreen({ navigation }) {
       </ImageBackground>
 
       <View style={styles.topContent}>
-        <Text style={styles.topText}>Inicia sesión para descubrir cómo tus acciones diarias pueden marcar la diferencia. Juntos, podemos crear un futuro más verde y sostenible</Text>
+        <Text style={styles.topText}>Crea un futuro más verde.</Text>
       </View>
 
       <View style={styles.bottomContent}>
@@ -65,9 +65,21 @@ export default function App() {
       <Stack.Navigator initialRouteName="Home">
         <Stack.Screen name="Home" component={HomeScreen} options={{headerShown: false}} />
         <Stack.Screen name="Login" component={LoginScreen} options={{title: 'Iniciar Sesión'}} />
+        <Stack.Screen name="GreenSteps" component={GreenSteps} options={{title: 'GreenSteps'}} />
       </Stack.Navigator>
     </NavigationContainer>
   );
+
+<TouchableOpacity 
+          style={styles.button} 
+          onPress={() => {
+            addUser(); // Llama a la función para enviar los datos a Firebase
+            navigation.navigate('Login'); // Navega a la pantalla de Login
+          }}
+        >
+          <Text style={styles.buttonText}>Inicio</Text>
+        </TouchableOpacity>
+
 }
 
 const styles = StyleSheet.create({
@@ -110,7 +122,8 @@ const styles = StyleSheet.create({
   },
   topText: {
     fontSize: 15,
-    color: 'black',
+    color: 'green',
+    marginTop: '1%',
   },
   bottomContent: {
     position: 'absolute',
