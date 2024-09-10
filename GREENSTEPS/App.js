@@ -30,11 +30,11 @@ function HomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <ImageBackground
-        source={require('./IMAGENES/atras.png')}
+        source={require('./Imagenes/atras.png')}
         style={styles.background}
       >
         <Image 
-          source={require('./IMAGENES/logo0.png')} 
+          source={require('./Imagenes/logo0.png')} 
           style={styles.logo}
         />
         <Text style={styles.texto}>
@@ -48,12 +48,15 @@ function HomeScreen({ navigation }) {
       </View>
 
       <View style={styles.bottomContent}>
-        <TouchableOpacity 
-          style={styles.button} 
-          onPress={() => navigation.navigate('Login')}
-        >
-          <Text style={styles.buttonText}>Inicio</Text>
-        </TouchableOpacity>
+            <TouchableOpacity 
+        style={styles.button} 
+        onPress={() => {
+          addUser(); // Llama a la función para enviar los datos a Firebase
+          navigation.navigate('Login'); // Navega a la pantalla de Login
+        }}
+      >
+        <Text style={styles.buttonText}>Inicio</Text>
+      </TouchableOpacity>
       </View>
     </View>
   );
@@ -69,16 +72,6 @@ export default function App() {
       </Stack.Navigator>
     </NavigationContainer>
   );
-
-<TouchableOpacity 
-          style={styles.button} 
-          onPress={() => {
-            addUser(); // Llama a la función para enviar los datos a Firebase
-            navigation.navigate('Login'); // Navega a la pantalla de Login
-          }}
-        >
-          <Text style={styles.buttonText}>Inicio</Text>
-        </TouchableOpacity>
 
 }
 

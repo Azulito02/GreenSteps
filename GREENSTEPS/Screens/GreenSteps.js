@@ -1,11 +1,33 @@
 import React from 'react';
-import { StyleSheet, View, Text, Image } from 'react-native';
+import { StyleSheet, View, Text, Image, TouchableOpacity } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons'; // npm install @expo/vector-icons
+
 
 export default function GreenSteps() {
   return (
     <View style={styles.container}>
-      <Image source={require('../IMAGENES/logo0.png')} style={styles.logo} />
+      <Image source={require('../IMAGENES/logo2.png')} style={styles.logo} />
       <Text style={styles.text}>Green Steps</Text>
+
+      {/* Barra de navegación */}
+      <View style={styles.navBar}>
+        <TouchableOpacity style={styles.navButton}>
+          <MaterialIcons name="home" size={24} color="white" />
+          <Text style={styles.navText}>Inicio</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navButton}>
+          <MaterialIcons name="report" size={24} color="white" />
+          <Text style={styles.navText}>Reportar</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navButton}>
+          <MaterialIcons name="map" size={24} color="white" />
+          <Text style={styles.navText}>Mapa</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navButton}>
+          <MaterialIcons name="settings" size={24} color="white" />
+          <Text style={styles.navText}>Ajustes</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -13,16 +35,34 @@ export default function GreenSteps() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'flex-start', // Alinea los elementos en la parte superior
-    alignItems: 'flex-start', // Alinea los elementos a la izquierda
-    padding: 10, // Añade un poco de espacio alrededor del contenido
+    justifyContent: 'flex-start', 
+    alignItems: 'flex-start', 
+    padding: 10, 
   },
   logo: {
-    width: 50, // Ajusta el tamaño del logo según necesites
+    width: 50, 
     height: 50,
-    marginBottom: 10, // Añade un margen debajo del logo para separarlo del texto
+    marginBottom: 10, 
   },
   text: {
-    fontSize: 18, // Ajusta el tamaño de la fuente según necesites
+    fontSize: 18, 
+  },
+  navBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    backgroundColor: '#008000',
+    height: 60,
+    width: '110%', 
+    position: 'absolute',
+    bottom: 0,
+  },
+  navButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  navText: {
+    color: 'white',
+    fontSize: 12,
   },
 });
