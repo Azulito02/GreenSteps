@@ -30,11 +30,11 @@ function HomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <ImageBackground
-        source={require('./Imagenes/atras.png')}
+        source={require('./IMAGENES/atras.png')}
         style={styles.background}
       >
         <Image 
-          source={require('./Imagenes/logo0.png')} 
+          source={require('./IMAGENES/logo0.png')} 
           style={styles.logo}
         />
         <Text style={styles.texto}>
