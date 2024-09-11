@@ -17,6 +17,7 @@ export default function LoginScreen({ navigation }) {
         name: name,
         foto_perfil: fotoPerfil
       });
+      navigation.navigate('GreenSteps');
       console.log("Documento agregado correctamente con ID: ", docRef.id);
     } catch (error) {
       console.error("Error al registrar el usuario: ", error);
@@ -25,7 +26,7 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <TextInput
+      <TextInput  
         style={styles.input}
         placeholder="Email"
         value={email}
