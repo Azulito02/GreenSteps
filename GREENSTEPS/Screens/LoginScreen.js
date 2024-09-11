@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, TextInput, Button, Text, Alert } from 'react-native';
+import { StyleSheet, View, TextInput, Button, Text, Alert,Image } from 'react-native';
 import { collection, addDoc } from "firebase/firestore";
 import { db } from '../bd/firebaseconfig'; // Asegúrate de que esta ruta es correcta
 
@@ -41,6 +41,12 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+
+       <Image 
+        source={require('../IMAGENES/logo2.png')} // Ruta de la imagen que deseas mostrar
+        style={styles.logo}
+      />
+
       <TextInput  
         style={styles.input}
         placeholder="Email"
@@ -78,6 +84,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20,
     backgroundColor: '#fff',
+  },
+  logo: {
+    width: 200,
+    height: 119,
+    alignSelf: 'center',
+    marginBottom: 40,
   },
   input: {
     height: 40,
