@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, TextInput, Button, Text } from 'react-native';
+import { StyleSheet, View, TextInput, Button, Text, Alert } from 'react-native';
 import { collection, addDoc } from "firebase/firestore";
 import { db } from '../bd/firebaseconfig'; // Asegúrate de que esta ruta es correcta
 
@@ -9,7 +9,22 @@ export default function LoginScreen({ navigation }) {
   const [name, setName] = useState('');
   const [fotoPerfil, setFotoPerfil] = useState('');
 
+  const validateEmail = (email) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  };
+
   const handleRegister = async () => {
+    if (!email || !password || !name || !fotoPerfil) {
+      Alert.alert('Error', 'Todos los campos son obligatorios.');
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      Alert.alert('Error', 'Por favor ingrese un email válido.');
+      return;
+    }
+
     try {
       const docRef = await addDoc(collection(db, "usuarios"), {
         email: email,
@@ -31,6 +46,7 @@ export default function LoginScreen({ navigation }) {
         placeholder="Email"
         value={email}
         onChangeText={setEmail}
+        keyboardType="email-address"
       />
       <TextInput
         style={styles.input}
