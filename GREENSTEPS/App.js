@@ -50,9 +50,7 @@ function HomeScreen({ navigation }) {
       <View style={styles.bottomContent}>
             <TouchableOpacity 
         style={styles.button} 
-        onPress={() => {
-          addUser(); // Llama a la función para enviar los datos a Firebase
-          navigation.navigate('Login'); // Navega a la pantalla de Login
+        onPress={() => {addUser(); navigation.navigate('Login');
         }}
       >
         <Text style={styles.buttonText}>Inicio</Text>

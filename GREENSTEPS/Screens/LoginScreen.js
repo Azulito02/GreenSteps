@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, TextInput, Button, Text, Alert,Image } from 'react-native';
+import { StyleSheet, View, TextInput, Button, Alert,Image } from 'react-native';
 import { collection, addDoc } from "firebase/firestore";
-import { db } from '../bd/firebaseconfig'; // Asegúrate de que esta ruta es correcta
+import { db } from '../bd/firebaseconfig';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -49,21 +49,21 @@ export default function LoginScreen({ navigation }) {
 
       <TextInput  
         style={styles.input}
-        placeholder="Email"
+        placeholder="Correo"
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
       />
       <TextInput
         style={styles.input}
-        placeholder="Password"
+        placeholder="Contraseña"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
       />
       <TextInput
         style={styles.input}
-        placeholder="Name"
+        placeholder="Nombre"
         value={name}
         onChangeText={setName}
       />
@@ -73,7 +73,7 @@ export default function LoginScreen({ navigation }) {
         value={fotoPerfil}
         onChangeText={setFotoPerfil}
       />
-      <Button title="Register" onPress={handleRegister} />
+      <Button title="Iniciar Sesion" onPress={handleRegister} />
     </View>
   );
 }

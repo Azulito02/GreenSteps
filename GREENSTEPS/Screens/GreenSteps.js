@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, Image, TouchableOpacity, Modal, Button, TextInput } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons'; // npm install @expo/vector-icons
-import MapView, { Marker } from 'react-native-maps'; // Importamos los componentes del mapa
+import { StyleSheet, View, Text, Image, TouchableOpacity, TextInput } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import MapView, { Marker } from 'react-native-maps';
 
 // Componente para el contenido de Inicio con imagen y un campo de texto
 const HomeContent = () => {
@@ -10,14 +10,16 @@ const HomeContent = () => {
   return (
     <View style={styles.contentContainer}>
       <Image source={require('../IMAGENES/logo0.png')} style={styles.contentImage} />
-      <Text style={styles.modalText}>Este es el contenido de Inicio.</Text>
+      <Text style={styles.contentText}>Este es el contenido de Inicio.</Text>
       <TextInput
         style={styles.input}
         placeholder="Escribe algo aquí..."
         value={inputText}
         onChangeText={setInputText}
       />
-      <Button title="Hacer algo" onPress={() => alert(`Texto ingresado: ${inputText}`)} />
+      <TouchableOpacity style={styles.button} onPress={() => alert(`Texto ingresado: ${inputText}`)}>
+        <Text style={styles.buttonText}>Hacer algo</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -29,14 +31,16 @@ const ReportContent = () => {
   return (
     <View style={styles.contentContainer}>
       <Image source={require('../IMAGENES/logo0.png')} style={styles.contentImage} />
-      <Text style={styles.modalText}>Formulario de Reporte</Text>
+      <Text style={styles.contentText}>Formulario de Reporte</Text>
       <TextInput
         style={styles.input}
         placeholder="Describe tu reporte..."
         value={reportText}
         onChangeText={setReportText}
       />
-      <Button title="Enviar Reporte" onPress={() => alert(`Reporte enviado: ${reportText}`)} />
+      <TouchableOpacity style={styles.button} onPress={() => alert(`Reporte enviado: ${reportText}`)}>
+        <Text style={styles.buttonText}>Enviar Reporte</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -59,60 +63,49 @@ const MapContent = () => (
         description="Este es un marcador de ejemplo"
       />
     </MapView>
-    <Button title="Ver ubicación" onPress={() => alert('Mostrando ubicación en el mapa')} />
+    <TouchableOpacity style={styles.button} onPress={() => alert('Mostrando ubicación en el mapa')}>
+      <Text style={styles.buttonText}>Ver ubicación</Text>
+    </TouchableOpacity>
   </View>
 );
 
 const SettingsContent = () => (
-  <View>
-    <Text style={styles.modalText}>Configuración de la App</Text>
-    <Button title="Guardar configuración" onPress={() => alert('Configuración guardada')} />
+  <View style={styles.contentContainer}>
+    <Text style={styles.contentText}>Configuración de la App</Text>
+    <TouchableOpacity style={styles.button} onPress={() => alert('Configuración guardada')}>
+      <Text style={styles.buttonText}>Guardar configuración</Text>
+    </TouchableOpacity>
   </View>
 );
 
 export default function GreenSteps() {
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalContent, setModalContent] = useState(null);
-
-  const handleNavClick = (content) => {
-    setModalContent(content);
-    setModalVisible(true);
-  };
+  const [activeComponent, setActiveComponent] = useState(<HomeContent />);
 
   return (
     <View style={styles.container}>
       <Image source={require('../IMAGENES/logo2.png')} style={styles.logo} />
       <Text style={styles.text}>Green Steps</Text>
 
-      {/* Modal */}
-      <Modal
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            {modalContent}
-            <Button title="Cerrar" onPress={() => setModalVisible(false)} />
-          </View>
-        </View>
-      </Modal>
+      {/* Aquí se mostrará el componente activo */}
+      <View style={styles.contentArea}>
+        {activeComponent}
+      </View>
 
       {/* Barra de navegación */}
       <View style={styles.navBar}>
-        <TouchableOpacity style={styles.navButton} onPress={() => handleNavClick(<HomeContent />)}>
+        <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<HomeContent />)}>
           <MaterialIcons name="home" size={24} color="white" />
           <Text style={styles.navText}>Inicio</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton} onPress={() => handleNavClick(<ReportContent />)}>
+        <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ReportContent />)}>
           <MaterialIcons name="report" size={24} color="white" />
           <Text style={styles.navText}>Reportar</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton} onPress={() => handleNavClick(<MapContent />)}>
+        <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<MapContent />)}>
           <MaterialIcons name="map" size={24} color="white" />
           <Text style={styles.navText}>Mapa</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton} onPress={() => handleNavClick(<SettingsContent />)}>
+        <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<SettingsContent />)}>
           <MaterialIcons name="settings" size={24} color="white" />
           <Text style={styles.navText}>Ajustes</Text>
         </TouchableOpacity>
@@ -124,17 +117,22 @@ export default function GreenSteps() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'flex-start', 
-    alignItems: 'flex-start', 
-    padding: 10, 
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    padding: 10,
   },
   logo: {
-    width: 50, 
+    width: 50,
     height: 50,
-    marginBottom: 10, 
+    marginBottom: 10,
   },
   text: {
-    fontSize: 18, 
+    fontSize: 18,
+  },
+  contentArea: {
+    flex: 1,
+    width: '100%',
+    paddingTop: 10,
   },
   navBar: {
     flexDirection: 'row',
@@ -142,7 +140,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#008000',
     height: 60,
-    width: '109%', 
+    width: '109%',
     position: 'absolute',
     bottom: 0,
   },
@@ -154,23 +152,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', 
-  },
-  modalContainer: {
-    width: 300,
-    padding: 20,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  modalText: {
-    fontSize: 18,
-    marginBottom: 20,
-  },
   contentContainer: {
     alignItems: 'center',
   },
@@ -179,6 +160,10 @@ const styles = StyleSheet.create({
     height: 100,
     marginBottom: 10,
   },
+  contentText: {
+    fontSize: 18,
+    marginBottom: 20,
+  },
   input: {
     height: 40,
     borderColor: 'gray',
@@ -186,5 +171,25 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     width: '100%',
     paddingHorizontal: 10,
+  },
+  button: {
+    backgroundColor: '#008000',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  buttonText: {
+    color: 'white',
+    textAlign: 'center',
+  },
+  mapContainer: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  map: {
+    width: '100%',
+    height: 200,
   },
 });
