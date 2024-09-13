@@ -1,26 +1,72 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, Image, TouchableOpacity, TextInput } from 'react-native';
+import { StyleSheet, View, Text, Image, TouchableOpacity, TextInput, FlatList, useWindowDimensions, Button, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
-
+import * as ImagePicker from 'expo-image-picker';
+import { Video } from 'expo-av';
 // Componente para el contenido de Inicio con imagen y un campo de texto
 const HomeContent = () => {
-  const [inputText, setInputText] = useState('');
+  const [media, setMedia] = useState([]);  // Cambié de `images` a `media` para soportar tanto imágenes como videos
+  const [isLoading, setIsLoading] = useState(false);
+  const { width } = useWindowDimensions();
+
+  const pickMedia = async () => {
+    setIsLoading(true);
+
+    // Solicitar acceso a la galería y permitir la selección de imágenes y videos
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,  // Permitir imágenes y videos
+      allowsMultipleSelection: true,
+      selectionLimit: 10,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    setIsLoading(false);
+
+    if (!result.canceled) {
+      // Almacenar las imágenes y videos seleccionados en `result.assets`
+      setMedia(result.assets || []);
+    }
+  };
+
+  // Función para renderizar cada elemento, verificando si es imagen o video
+  const renderItem = ({ item }) => {
+    if (item.type === 'image') {
+      // Renderizar imagen
+      return <Image source={{ uri: item.uri }} style={{ width: width, height: 250 }} />;
+    } else if (item.type === 'video') {
+      // Renderizar video
+      return (
+        <Video
+          source={{ uri: item.uri }}
+          style={{ width: width, height: 250 }}
+          useNativeControls
+          resizeMode="contain"
+          isLooping
+        />
+      );
+    } else {
+      return null;
+    }
+  };
 
   return (
-    <View style={styles.contentContainer}>
-      <Image source={require('../IMAGENES/logo0.png')} style={styles.contentImage} />
-      <Text style={styles.contentText}>Este es el contenido de Inicio.</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Escribe algo aquí..."
-        value={inputText}
-        onChangeText={setInputText}
-      />
-      <TouchableOpacity style={styles.button} onPress={() => alert(`Texto ingresado: ${inputText}`)}>
-        <Text style={styles.buttonText}>Hacer algo</Text>
-      </TouchableOpacity>
-    </View>
+    <FlatList
+      data={media}
+      renderItem={renderItem}
+      keyExtractor={(item) => item.uri}
+      contentContainerStyle={{ marginVertical: 50, paddingBottom: 100 }}
+      ListHeaderComponent={
+        isLoading ? (
+          <View>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', textAlign: 'center' }}>Cargando...</Text>
+          </View>
+        ) : (
+          <Button title="Agregar Imagen o Video" onPress={pickMedia} />
+        )
+      }
+    />
   );
 };
 
