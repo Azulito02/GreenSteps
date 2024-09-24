@@ -1,21 +1,29 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, Image, TouchableOpacity, TextInput, FlatList, useWindowDimensions, Button, ActivityIndicator } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
-import MapView, { Marker } from 'react-native-maps';
-import * as ImagePicker from 'expo-image-picker';
 import { Video } from 'expo-av';
-// Componente para el contenido de Inicio con imagen y un campo de texto
+import * as ImagePicker from 'expo-image-picker';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getFirestore, collection, addDoc, Timestamp } from 'firebase/firestore'; 
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { getApp } from 'firebase/app';  
+
+// Inicializa Firebase
+const storage = getStorage(getApp());
+const firestore = getFirestore(getApp());
+
 const HomeContent = () => {
-  const [media, setMedia] = useState([]);  // Cambié de `images` a `media` para soportar tanto imágenes como videos
+  const [media, setMedia] = useState([]);
+  const [descripcion, setDescripcion] = useState('');
+  const [titulo, setTitulo] = useState('');
+  const [estado, setEstado] = useState('');
+  const [comentario, setComentario] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { width } = useWindowDimensions();
 
   const pickMedia = async () => {
     setIsLoading(true);
-
-    // Solicitar acceso a la galería y permitir la selección de imágenes y videos
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,  // Permitir imágenes y videos
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsMultipleSelection: true,
       selectionLimit: 10,
       aspect: [4, 3],
@@ -25,22 +33,69 @@ const HomeContent = () => {
     setIsLoading(false);
 
     if (!result.canceled) {
-      // Almacenar las imágenes y videos seleccionados en `result.assets`
       setMedia(result.assets || []);
     }
   };
 
-  // Función para renderizar cada elemento, verificando si es imagen o video
+  const uploadMedia = async (uri, type) => {
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const filename = `${Date.now()}_${type}`;
+      const storageRef = ref(storage, `media/${filename}`);
+      await uploadBytes(storageRef, blob);
+      return await getDownloadURL(storageRef);
+    } catch (error) {
+      console.error("Error al subir archivo a Firebase Storage: ", error);
+      throw error;
+    }
+  };
+  
+  const handleSubmit = async () => {
+    try {
+      setIsLoading(true);
+      let fotoURL = '';
+      let videoURL = '';
+
+      // Subir imágenes y videos a Firebase Storage
+      for (const item of media) {
+        if (item.type === 'image') {
+          fotoURL = await uploadMedia(item.uri, 'image');
+        } else if (item.type === 'video') {
+          videoURL = await uploadMedia(item.uri, 'video');
+        }
+      }
+
+      // Guardar datos en Firestore
+      await addDoc(collection(firestore, 'reportes'), {
+        descripcion,
+        titulo,
+        estado,
+        fecha_reportes: Timestamp.now(),  // Genera la fecha automáticamente
+        foto: fotoURL,
+        video: videoURL,
+        comentario
+      });
+
+      alert('Reporte enviado exitosamente.');
+      setDescripcion('');
+      setTitulo('');
+      setComentario('');
+    } catch (error) {
+      console.error("Error al subir datos: ", error);
+      alert(`Error al subir datos: ${error.message}`);
+      setIsLoading(false);
+    }
+  };
+
   const renderItem = ({ item }) => {
     if (item.type === 'image') {
-      // Renderizar imagen
-      return <Image source={{ uri: item.uri }} style={{ width: width, height: 250 }} />;
+      return <Image source={{ uri: item.uri }} style={{ width: width, height: 270}} />;
     } else if (item.type === 'video') {
-      // Renderizar video
       return (
         <Video
           source={{ uri: item.uri }}
-          style={{ width: width, height: 250 }}
+          style={{ width: width, height: 270 }}
           useNativeControls
           resizeMode="contain"
           isLooping
@@ -52,23 +107,48 @@ const HomeContent = () => {
   };
 
   return (
-    <FlatList
-      data={media}
-      renderItem={renderItem}
-      keyExtractor={(item) => item.uri}
-      contentContainerStyle={{ marginVertical: 50, paddingBottom: 100 }}
-      ListHeaderComponent={
-        isLoading ? (
-          <View>
-            <Text style={{ fontSize: 20, fontWeight: 'bold', textAlign: 'center' }}>Cargando...</Text>
-          </View>
-        ) : (
-          <Button title="Agregar Imagen o Video" onPress={pickMedia} />
-        )
-      }
-    />
+    <View>
+      <TextInput
+        style={styles.input}
+        placeholder="Título"
+        value={titulo}
+        onChangeText={setTitulo}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Descripción"
+        value={descripcion}
+        onChangeText={setDescripcion}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Comentario"
+        value={comentario}
+        onChangeText={setComentario}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Estado"
+        value={estado}
+        onChangeText={setEstado}
+      />
+
+      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+        <Text style={styles.buttonText}>Enviar Reporte</Text>
+      </TouchableOpacity>
+
+      <Button title="Agregar Imagen o Video" onPress={pickMedia} />
+      {isLoading && <ActivityIndicator size="large" color="#0000ff" />}
+      
+      <FlatList
+        data={media}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.uri}
+        contentContainerStyle={{ marginVertical: 50, paddingBottom: 100 }}
+      />
+    </View>
   );
-};
+}
 
 // Componente para el contenido de Reporte con imagen y un campo de texto
 const ReportContent = () => {
@@ -141,11 +221,11 @@ export default function GreenSteps() {
       <View style={styles.navBar}>
         <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<HomeContent />)}>
           <MaterialIcons name="home" size={24} color="white" />
-          <Text style={styles.navText}>Inicio</Text>
+          <Text style={styles.navText}>Reportes</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ReportContent />)}>
           <MaterialIcons name="report" size={24} color="white" />
-          <Text style={styles.navText}>Reportar</Text>
+          <Text style={styles.navText}>News</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<MapContent />)}>
           <MaterialIcons name="map" size={24} color="white" />
@@ -161,6 +241,26 @@ export default function GreenSteps() {
 }
 
 const styles = StyleSheet.create({
+
+  input: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    marginBottom: 20,
+    width: '100%',
+    paddingHorizontal: 10,
+  },
+  button: {
+    backgroundColor: '#008000',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  buttonText: {
+    color: 'white',
+    textAlign: 'down',
+  },
+
   container: {
     flex: 1,
     justifyContent: 'flex-start',
