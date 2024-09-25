@@ -13,11 +13,12 @@ const Stack = createStackNavigator();
   
 function HomeScreen({ navigation }) {
 
+  //comando para añadir usuario ala base de datos en firebase
   const addUser = async () => {
     try {
       await setDoc(doc(db, "usuarios", "2"), {
         contraseña: "12345678",
-        correo_electronico: "eliab@gmail.com",
+        correo_electronico: "milton@gmail.com",
         foto_perfil: "milton.png",
         nombre: "Milton Augusto Oporta Lopez"
       });
@@ -60,6 +61,7 @@ function HomeScreen({ navigation }) {
   );
 }
 
+//Stack Navigator para navegar entre pestaña
 export default function App() {
   return (
     <NavigationContainer>
