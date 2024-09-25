@@ -151,26 +151,64 @@ const HomeContent = () => {
   );
 }
 
+  
+
 // Componente para el contenido de Reporte con imagen y un campo de texto
-const ReportContent = () => {
-  const [reportText, setReportText] = useState('');
+const noticias = [
+  {
+    id: '1',
+    titulo: 'Cambio climático amenaza a la biodiversidad',
+    descripcion: 'El calentamiento global pone en riesgo a miles de especies.',
+    url: 'https://www.noticias1.com',
+   
+  },
+  {
+    id: '2',
+    titulo: 'Innovaciones verdes para el futuro',
+    descripcion: 'Nuevas tecnologías están cambiando la manera en que cuidamos el planeta.',
+    url: 'https://www.noticias2.com',
+    
+  },
+  {
+    id: '3',
+    titulo: 'Reducción del plástico en los océanos',
+    descripcion: 'Proyectos globales buscan reducir los desechos plásticos en los océanos.',
+    url: 'https://www.noticias3.com',
+ 
+  },
+];
+
+const NoticiaItem = ({ noticia }) => {
+  const handlePress = () => {
+    Linking.openURL(noticia.url).catch(err => console.error("Error al abrir URL:", err));
+  };
 
   return (
+    <TouchableOpacity onPress={handlePress} style={styles.card}>
+      <View style={styles.cardContent}>
+        <Text style={styles.cardTitle}>{noticia.titulo}</Text>
+        <Text style={styles.cardDescription}>{noticia.descripcion}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+// Componente principal
+const ReportContent = () => {
+  return (
     <View style={styles.contentContainer}>
-      <Image source={require('../IMAGENES/logo0.png')} style={styles.contentImage} />
-      <Text style={styles.contentText}>Formulario de Reporte</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Describe tu reporte..."
-        value={reportText}
-        onChangeText={setReportText}
+      <Text style={styles.headerText}>Noticias</Text>
+      
+      <FlatList
+        data={noticias}
+        renderItem={({ item }) => <NoticiaItem noticia={item} />}
+        keyExtractor={(item) => item.id}
       />
-      <TouchableOpacity style={styles.button} onPress={() => alert(`Reporte enviado: ${reportText}`)}>
-        <Text style={styles.buttonText}>Enviar Reporte</Text>
-      </TouchableOpacity>
     </View>
   );
 };
+
+
 
 // Componente para el contenido de Mapa con el mapa integrado
 
@@ -319,7 +357,6 @@ export default function GreenSteps() {
       <Image source={require('../IMAGENES/logo2.png')} style={styles.logo} />
       <Text style={styles.text}>Green Steps</Text>
 
-      {/* Aquí se mostrará el componente activo */}
       <View style={styles.contentArea}>
         {activeComponent}
       </View>
@@ -331,7 +368,7 @@ export default function GreenSteps() {
           <Text style={styles.navText}>Reportes</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ReportContent />)}>
-          <MaterialIcons name="report" size={24} color="white" />
+          <MaterialIcons name="newspaper" size={24} color="white" />
           <Text style={styles.navText}>News</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<MapContent />)}>
@@ -348,7 +385,48 @@ export default function GreenSteps() {
 }
 
 const styles = StyleSheet.create({
-
+  contentContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  headerText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginVertical: 20,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  cardContent: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  cardDescription: {
+    fontSize: 14,
+    color: '#666',
+  },
+  noticiaContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+  },
   input: {
     height: 40,
     borderColor: 'gray',
