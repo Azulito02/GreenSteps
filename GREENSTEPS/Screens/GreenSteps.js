@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Alert, View, Text, Image, TouchableOpacity, TextInput, FlatList, useWindowDimensions, Linking, Button, ActivityIndicator } from 'react-native';
 import { Video } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
@@ -7,6 +7,7 @@ import { getFirestore, collection, addDoc, Timestamp } from 'firebase/firestore'
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { getApp } from 'firebase/app';  
 import MapView, { Marker } from 'react-native-maps';
+import * as Location from 'expo-location';
 
 // Inicializa Firebase
 const storage = getStorage(getApp());
@@ -217,6 +218,8 @@ const MapContent = () => {
   const initialLongitude = -85.2072;
   const zoom = 6; // Nivel de zoom adecuado para ver Nicaragua
 
+  const mapRef = useRef(null); // Referencia al mapa para poder moverlo programáticamente
+
   const [markers, setMarkers] = useState([
     {
       latitude: initialLatitude,
@@ -227,19 +230,76 @@ const MapContent = () => {
     },
   ]);
 
-  // Función para abrir Google Maps en la ubicación inicial
-  const openGoogleMaps = () => {
-    const url = `https://www.google.com/maps/@${initialLatitude},${initialLongitude},${zoom}z`;
+  const [location, setLocation] = useState(null);
+  const [hasLocationPermission, setHasLocationPermission] = useState(false);
 
-    Linking.openURL(url).catch((err) =>
-      Alert.alert('Error', 'No se pudo abrir Google Maps')
-    );
+  useEffect(() => {
+    (async () => {
+      // Pedir permisos de ubicación al usuario
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso denegado', 'Necesitamos acceso a tu ubicación para centrar el mapa.');
+        return;
+      }
+      setHasLocationPermission(true);
+    })();
+  }, []);
+
+  // Función para obtener la ubicación actual del usuario y centrar el mapa en esa posición
+  const centerOnUserLocation = async () => {
+    if (!hasLocationPermission) {
+      Alert.alert('Permiso de ubicación no otorgado');
+      return;
+    }
+
+    let userLocation = await Location.getCurrentPositionAsync({});
+    const { latitude, longitude } = userLocation.coords;
+
+    setLocation({
+      latitude,
+      longitude,
+    });
+
+    // Centrar el mapa en la ubicación actual del usuario
+    mapRef.current.animateToRegion({
+      latitude,
+      longitude,
+      latitudeDelta: 0.01, // Zoom para acercar bastante
+      longitudeDelta: 0.01,
+    });
   };
 
   // Función para agregar un nuevo pin (marcador) en la ubicación donde el usuario tocó
   const handleMapPress = (event) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
 
+    // Mostrar un Alert para que el usuario seleccione el color del pin
+    Alert.alert(
+      'Selecciona el color del pin',
+      'Elige la severidad del nuevo pin:',
+      [
+        {
+          text: 'Rojo (grave)',
+          onPress: () => addNewPin(latitude, longitude, 'red'), // Añadir pin rojo
+        },
+        {
+          text: 'Amarillo (leve)',
+          onPress: () => addNewPin(latitude, longitude, 'yellow'), // Añadir pin amarillo
+        },
+        {
+          text: 'Verde (no serio)',
+          onPress: () => addNewPin(latitude, longitude, 'green'), // Añadir pin verde
+        },
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+      ]
+    );
+  };
+
+  // Función para añadir el nuevo pin al estado de markers
+  const addNewPin = (latitude, longitude, severity) => {
     setMarkers([
       ...markers,
       {
@@ -247,7 +307,7 @@ const MapContent = () => {
         longitude,
         title: 'Nuevo pin',
         description: 'Pin añadido por el usuario',
-        severity: 'green', // Color por defecto en verde
+        severity, // Color según la selección del usuario
       },
     ]);
   };
@@ -310,6 +370,7 @@ const MapContent = () => {
   return (
     <View style={styles.mapContainer}>
       <MapView
+        ref={mapRef} // Referencia al mapa
         style={styles.map}
         initialRegion={{
           latitude: initialLatitude,
@@ -333,12 +394,14 @@ const MapContent = () => {
           />
         ))}
       </MapView>
-      <TouchableOpacity style={styles.button} onPress={openGoogleMaps}>
-        <Text style={styles.buttonText}>Ver ubicación</Text>
+
+      {/* Botón para centrar en la ubicación actual */}
+      <TouchableOpacity style={styles.locationButton} onPress={centerOnUserLocation}>
+        <MaterialIcons name="my-location" size={24} color="white" />
       </TouchableOpacity>
     </View>
   );
-}
+};
 
 const SettingsContent = () => (
   <View style={styles.contentContainer}>
@@ -522,5 +585,16 @@ const styles = StyleSheet.create({
   map: {
     width: '100%',
     height: 200,
+  },
+  locationButton: {
+    position: 'absolute',
+    bottom: 100,
+    right: 20,
+    backgroundColor: '#008000', // Color verde para el botón
+    padding: 10,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5, // Sombra para que el botón resalte
   },
 });
