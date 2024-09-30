@@ -1,20 +1,41 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, Image, ImageBackground, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { doc, setDoc } from "firebase/firestore"; 
-import { db } from "./bd/firebaseconfig.js"
+import { db } from "./bd/firebaseconfig.js";
 import GreenSteps from './Screens/GreenSteps.js';
 import LoginScreen from './Screens/LoginScreen.js';
 import MapaScreen from './Screens/Mapa.js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Stack = createStackNavigator();
 
-  
-function HomeScreen({ navigation }) {
+export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  //comando para añadir usuario ala base de datos en firebase
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      const loggedIn = await AsyncStorage.getItem('usuarios');
+      setIsLoggedIn(loggedIn === 'true');
+    };
+    checkLoginStatus();
+  }, []);
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName={isLoggedIn ? "GreenSteps" : "Home"}>
+        <Stack.Screen name="Home" component={HomeScreen} options={{headerShown: false}} />
+        <Stack.Screen name="Login" component={LoginScreen} options={{title: 'Iniciar Sesión'}} />
+        <Stack.Screen name="GreenSteps" component={GreenSteps} options={{title: 'GreenSteps'}} />
+        <Stack.Screen name="Mapas" component={MapaScreen} options={{title: 'Mapas'}} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+
+const HomeScreen = ({ navigation }) => {
   const addUser = async () => {
     try {
       await setDoc(doc(db, "usuarios", "2"), {
@@ -50,32 +71,16 @@ function HomeScreen({ navigation }) {
       </View>
 
       <View style={styles.bottomContent}>
-            <TouchableOpacity 
-        style={styles.button} 
-        onPress={() => {addUser(); navigation.navigate('Login');
-        }}
-      >
-        <Text style={styles.buttonText}>Inicio</Text>
-      </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.button} 
+          onPress={() => {addUser(); navigation.navigate('GreenSteps');}}
+        >
+          <Text style={styles.buttonText}>Inicio</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
-}
-
-//Stack Navigator para navegar entre pestaña
-export default function App() {
-  return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="Home">
-        <Stack.Screen name="Home" component={HomeScreen} options={{headerShown: false}} />
-        <Stack.Screen name="Login" component={LoginScreen} options={{title: 'Iniciar Sesión'}} />
-        <Stack.Screen name="GreenSteps" component={GreenSteps} options={{title: 'GreenSteps'}} />
-        <Stack.Screen name="Mapas" component={MapaScreen} options={{title: 'Mapas'}} />
-      </Stack.Navigator>
-    </NavigationContainer>
-  );
-
-}
+};
 
 const styles = StyleSheet.create({
   container: {

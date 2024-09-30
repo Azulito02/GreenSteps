@@ -15,9 +15,7 @@ export default function GreenSteps() {
 
   return (
     <View style={styles.container}>
-      <Image source={require('../IMAGENES/logo2.png')} style={styles.logo} />
-      <Text style={styles.text}>Green Steps</Text>
-
+      
       <View style={styles.contentArea}>
         {activeComponent}
       </View>

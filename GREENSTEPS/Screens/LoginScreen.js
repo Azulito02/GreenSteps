@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, TextInput, Button, Alert,Image } from 'react-native';
+import { StyleSheet, View, TextInput, Button, Alert, Image } from 'react-native';
 import { collection, addDoc } from "firebase/firestore";
 import { db } from '../bd/firebaseconfig';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Asegúrate de instalar esta librería
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -32,6 +33,10 @@ export default function LoginScreen({ navigation }) {
         name: name,
         foto_perfil: fotoPerfil
       });
+      
+      // Guarda el estado de inicio de sesión en AsyncStorage
+      await AsyncStorage.setItem('usuarios', 'true');
+      
       navigation.navigate('GreenSteps');
       console.log("Documento agregado correctamente con ID: ", docRef.id);
     } catch (error) {
@@ -41,12 +46,10 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-
-       <Image 
+      <Image 
         source={require('../IMAGENES/logo2.png')} // Ruta de la imagen que deseas mostrar
         style={styles.logo}
       />
-
       <TextInput  
         style={styles.input}
         placeholder="Correo"
