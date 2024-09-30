@@ -1,230 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Alert, View, Text, Image, TouchableOpacity, TextInput, FlatList, useWindowDimensions, Linking, Button, ActivityIndicator } from 'react-native';
-import { Video } from 'expo-av';
-import * as ImagePicker from 'expo-image-picker';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getFirestore, collection, addDoc, Timestamp } from 'firebase/firestore'; 
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { getApp } from 'firebase/app';  
-import MapView, { Marker } from 'react-native-maps';
-import * as Location from 'expo-location';
-import MapContent from './Mapa';  // Asegúrate de que la ruta es correcta
+import MapContent from './Mapa'; 
+import ReportContent from './Reportes';
+import NoticiasContent from './News';
+import SettingsContent from './Ajustes';
 
-
-// Inicializa Firebase
-const storage = getStorage(getApp());
-const firestore = getFirestore(getApp());
-
-const HomeContent = () => {
-  const [media, setMedia] = useState([]);
-  const [descripcion, setDescripcion] = useState('');
-  const [titulo, setTitulo] = useState('');
-  const [estado, setEstado] = useState('');
-  const [comentario, setComentario] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { width } = useWindowDimensions();
-
-  const pickMedia = async () => {
-    setIsLoading(true);
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsMultipleSelection: true,
-      selectionLimit: 10,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    setIsLoading(false);
-
-    if (!result.canceled) {
-      setMedia(result.assets || []);
-    }
-  };
-
-  const uploadMedia = async (uri, type) => {
-    try {
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const filename = `${Date.now()}_${type}`;
-      const storageRef = ref(storage, `media/${filename}`);
-      await uploadBytes(storageRef, blob);
-      return await getDownloadURL(storageRef);
-    } catch (error) {
-      console.error("Error al subir archivo a Firebase Storage: ", error);
-      throw error;
-    }
-  };
-  
-  const handleSubmit = async () => {
-    try {
-      setIsLoading(true);
-      let fotoURL = '';
-      let videoURL = '';
-
-      // Subir imágenes y videos a Firebase Storage
-      for (const item of media) {
-        if (item.type === 'image') {
-          fotoURL = await uploadMedia(item.uri, 'image');
-        } else if (item.type === 'video') {
-          videoURL = await uploadMedia(item.uri, 'video');
-        }
-      }
-
-      // Guardar datos en Firestore
-      await addDoc(collection(firestore, 'reportes'), {
-        descripcion,
-        titulo,
-        estado,
-        fecha_reportes: Timestamp.now(),  // Genera la fecha automáticamente
-        foto: fotoURL,
-        video: videoURL,
-        comentario
-      });
-
-      alert('Reporte enviado exitosamente.');
-      setDescripcion('');
-      setTitulo('');
-      setComentario('');
-    } catch (error) {
-      console.error("Error al subir datos: ", error);
-      alert(`Error al subir datos: ${error.message}`);
-      setIsLoading(false);
-    }
-  };
-
-  const renderItem = ({ item }) => {
-    if (item.type === 'image') {
-      return <Image source={{ uri: item.uri }} style={{ width: width, height: 270}} />;
-    } else if (item.type === 'video') {
-      return (
-        <Video
-          source={{ uri: item.uri }}
-          style={{ width: width, height: 270 }}
-          useNativeControls
-          resizeMode="contain"
-          isLooping
-        />
-      );
-    } else {
-      return null;
-    }
-  };
-
-  return (
-    <View>
-      <TextInput
-        style={styles.input}
-        placeholder="Título"
-        value={titulo}
-        onChangeText={setTitulo}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Descripción"
-        value={descripcion}
-        onChangeText={setDescripcion}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Comentario"
-        value={comentario}
-        onChangeText={setComentario}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Estado"
-        value={estado}
-        onChangeText={setEstado}
-      />
-
-      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-        <Text style={styles.buttonText}>Enviar Reporte</Text>
-      </TouchableOpacity>
-
-      <Button title="Agregar Imagen o Video" onPress={pickMedia} />
-      {isLoading && <ActivityIndicator size="large" color="#0000ff" />}
-      
-      <FlatList
-        data={media}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.uri}
-        contentContainerStyle={{ marginVertical: 50, paddingBottom: 100 }}
-      />
-    </View>
-  );
-}
-
-  
-
-// Componente para el contenido de Reporte con imagen y un campo de texto
-const noticias = [
-  {
-    id: '1',
-    titulo: 'Cambio climático amenaza a la biodiversidad',
-    descripcion: 'El calentamiento global pone en riesgo a miles de especies.',
-    url: 'https://www.noticias1.com',
-   
-  },
-  {
-    id: '2',
-    titulo: 'Innovaciones verdes para el futuro',
-    descripcion: 'Nuevas tecnologías están cambiando la manera en que cuidamos el planeta.',
-    url: 'https://www.noticias2.com',
-    
-  },
-  {
-    id: '3',
-    titulo: 'Reducción del plástico en los océanos',
-    descripcion: 'Proyectos globales buscan reducir los desechos plásticos en los océanos.',
-    url: 'https://www.noticias3.com',
- 
-  },
-];
-
-const NoticiaItem = ({ noticia }) => {
-  const handlePress = () => {
-    Linking.openURL(noticia.url).catch(err => console.error("Error al abrir URL:", err));
-  };
-
-  return (
-    <TouchableOpacity onPress={handlePress} style={styles.card}>
-      <View style={styles.cardContent}>
-        <Text style={styles.cardTitle}>{noticia.titulo}</Text>
-        <Text style={styles.cardDescription}>{noticia.descripcion}</Text>
-      </View>
-    </TouchableOpacity>
-  );
-};
-
-// Componente principal
-const ReportContent = () => {
-  return (
-    <View style={styles.contentContainer}>
-      <Text style={styles.headerText}>Noticias</Text>
-      
-      <FlatList
-        data={noticias}
-        renderItem={({ item }) => <NoticiaItem noticia={item} />}
-        keyExtractor={(item) => item.id}
-      />
-    </View>
-  );
-};
-
-
-
-
-const SettingsContent = () => (
-  <View style={styles.contentContainer}>
-    <Text style={styles.contentText}>Configuración de la App</Text>
-    <TouchableOpacity style={styles.button} onPress={() => alert('Configuración guardada')}>
-      <Text style={styles.buttonText}>Guardar configuración</Text>
-    </TouchableOpacity>
-  </View>
-);
 
 export default function GreenSteps() {
-  const [activeComponent, setActiveComponent] = useState(<HomeContent />);
+  const [activeComponent, setActiveComponent] = useState(<ReportContent />);
 
   return (
     <View style={styles.container}>
@@ -237,11 +24,11 @@ export default function GreenSteps() {
 
       {/* Barra de navegación */}
       <View style={styles.navBar}>
-        <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<HomeContent />)}>
+        <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ReportContent />)}>
           <MaterialIcons name="home" size={24} color="white" />
           <Text style={styles.navText}>Reportes</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ReportContent />)}>
+        <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<NoticiasContent />)}>
           <MaterialIcons name="newspaper" size={24} color="white" />
           <Text style={styles.navText}>News</Text>
         </TouchableOpacity>

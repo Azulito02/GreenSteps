@@ -1,4 +1,9 @@
+import React, { useState } from 'react';
+import { StyleSheet, Alert, View, Text, Image, TouchableOpacity, TextInput, FlatList, useWindowDimensions, Linking, Button, ActivityIndicator } from 'react-native';
+
+
 // Array de noticias
+
 const noticias = [
     {
       id: '1',
@@ -37,7 +42,7 @@ const noticias = [
   };
   
   // Componente principal
-  const ReportContent = () => {
+  const NoticiasContent = () => {
     return (
       <View style={styles.contentContainer}>
         <Text style={styles.headerText}>Noticias</Text>
@@ -89,4 +94,4 @@ const noticias = [
     },
   });
   
-  export default ReportContent;
+  export default NoticiasContent;
