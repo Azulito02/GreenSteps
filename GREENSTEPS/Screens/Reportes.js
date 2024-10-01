@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getFirestore, collection, addDoc, getDocs, Timestamp } from 'firebase/firestore';
 import { getApp } from 'firebase/app';
+import Icon from 'react-native-vector-icons/Ionicons'; // Agregar esta línea
 
 const app = getApp();
 const firestore = getFirestore(app);
@@ -18,13 +19,12 @@ const ReportContent = () => {
   const [comentario, setComentario] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [reportes, setReportes] = useState([]);
-  const [isViewingReportes, setIsViewingReportes] = useState(true); // Estado para alternar entre vistas
+  const [isViewingReportes, setIsViewingReportes] = useState(true);
 
   useEffect(() => {
     fetchReportes();
   }, []);
 
-  // Función para recuperar los reportes de Firestore
   const fetchReportes = async () => {
     try {
       const querySnapshot = await getDocs(collection(firestore, 'reportes'));
@@ -98,7 +98,7 @@ const ReportContent = () => {
       setTitulo('');
       setComentario('');
       setMedia([]);
-      fetchReportes(); // Actualiza la lista de reportes después de subir uno nuevo
+      fetchReportes();
       setIsLoading(false);
     } catch (error) {
       console.error("Error al subir datos: ", error);
@@ -109,12 +109,12 @@ const ReportContent = () => {
 
   const renderItem = ({ item }) => {
     if (item.type === 'image') {
-      return <Image source={{ uri: item.uri }} style={{ width: 300, height: 300 }} />;
+      return <Image source={{ uri: item.uri }} style={styles.mediaItem} />;
     } else if (item.type === 'video') {
       return (
         <Video
           source={{ uri: item.uri }}
-          style={{ width: 300, height: 300 }}
+          style={styles.mediaItem}
           useNativeControls
           resizeMode="contain"
           isLooping
@@ -127,35 +127,26 @@ const ReportContent = () => {
 
   const renderReporte = ({ item }) => (
     <View style={styles.reporteItem}>
-      <Text>Título: {item.titulo}</Text>
-      <Text>Descripción: {item.descripcion}</Text>
-      {item.foto && <Image source={{ uri: item.foto }} style={{ width: 100, height: 100 }} />}
+      <Text style={styles.reporteTitle}>{item.titulo}</Text>
+      <Text style={styles.reporteText}>{item.descripcion}</Text>
+      {item.foto && <Image source={{ uri: item.foto }} style={styles.reporteImage} />}
       {item.video && (
         <Video
           source={{ uri: item.video }}
-          style={{ width: 100, height: 100 }}
+          style={styles.reporteImage}
           useNativeControls
           resizeMode="contain"
           isLooping
         />
       )}
-      <Text>Estado: {item.estado}</Text>
-      <Text>Comentario: {item.comentario}</Text>
-      <Text>Fecha: {item.fecha_reportes.toDate().toString()}</Text>
+      <Text style={styles.reporteText}>Estado: {item.estado}</Text>
+      <Text style={styles.reporteText}>Comentario: {item.comentario}</Text>
+      <Text style={styles.reporteDate}>Fecha: {item.fecha_reportes.toDate().toString()}</Text>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        style={styles.toggleButton}
-        onPress={() => setIsViewingReportes(!isViewingReportes)}
-      >
-        <Text style={styles.toggleButtonText}>
-          {isViewingReportes ? 'Agregar Reporte' : 'Ver Reportes'}
-        </Text>
-      </TouchableOpacity>
-
       {isViewingReportes ? (
         <View>
           <Text style={styles.sectionTitle}>Top Reportes</Text>
@@ -163,7 +154,7 @@ const ReportContent = () => {
             data={reportes}
             renderItem={renderReporte}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingBottom: 100 }}
+            contentContainerStyle={styles.reporteList}
           />
         </View>
       ) : (
@@ -204,10 +195,18 @@ const ReportContent = () => {
             data={media}
             renderItem={renderItem}
             keyExtractor={(item) => item.uri}
-            contentContainerStyle={{ marginVertical: 50, paddingBottom: 100 }}
+            contentContainerStyle={styles.mediaList}
           />
         </View>
       )}
+
+      {/* Botón circular flotante */}
+      <TouchableOpacity
+        style={styles.floatingButton}
+        onPress={() => setIsViewingReportes(!isViewingReportes)}
+      >
+        <Icon name="add-circle" size={60} color="#007bff" />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -216,7 +215,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#f0f0f0',
   },
   input: {
     height: 40,
@@ -225,39 +224,76 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     width: '100%',
     paddingHorizontal: 10,
+    borderRadius: 5,
+    backgroundColor: '#fff',
   },
   button: {
-    backgroundColor: '#008000',
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 10,
+    backgroundColor: '#28a745',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 20,
   },
   buttonText: {
     color: 'white',
-    textAlign: 'center',
+    fontWeight: 'bold',
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginVertical: 20,
+    marginBottom: 20,
+    color: '#333',
   },
   reporteItem: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  reporteTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  reporteText: {
+    fontSize: 14,
+    marginBottom: 5,
+    color: '#555',
+  },
+  reporteImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
     marginBottom: 10,
   },
-  toggleButton: {
-    backgroundColor: '#008000',
-    padding: 10,
-    borderRadius: 5,
-    marginBottom: 20,
+  reporteDate: {
+    fontSize: 12,
+    color: '#888',
+  },
+  mediaItem: {
+    width: 300,
+    height: 300,
+    borderRadius: 10,
+    marginVertical: 10,
+  },
+  mediaList: {
+    paddingBottom: 100,
+  },
+  reporteList: {
+    paddingBottom: 100,
+  },
+  floatingButton: {
+    position: 'absolute',
+    bottom: 50,
+    right: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-  },
-  toggleButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
+},
 });
 
 export default ReportContent;
