@@ -149,7 +149,6 @@ const ReportContent = () => {
     <View style={styles.container}>
       {isViewingReportes ? (
         <View>
-          <Text style={styles.sectionTitle}>Top Reportes</Text>
           <FlatList
             data={reportes}
             renderItem={renderReporte}
@@ -214,8 +213,8 @@ const ReportContent = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#f0f0f0',
+    padding: 10,
+    backgroundColor: '#dfccb2',
   },
   input: {
     height: 40,

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
 import ReportContent from './Reportes';
 import NoticiasContent from './News';
 import MapContent from './Mapa';
@@ -19,23 +18,38 @@ export default function GreenSteps() {
       {/* Barra de navegación */}
       <View style={styles.navBar}>
         <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ReportContent />)}>
-          <MaterialIcons name="home" size={24} color="white" />
+          <Image
+            source={require('../IMAGENES/Iconos/Sin título-1.png')} 
+            style={styles.navIcon}
+          />
           <Text style={styles.navText}>Reportes</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<NoticiasContent />)}>
-          <MaterialIcons name="newspaper" size={24} color="white" />
+          <Image
+            source={require('../IMAGENES/Iconos/Sin título-2.png')} 
+            style={styles.navIcon}
+          />
           <Text style={styles.navText}>News</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ImagePickerComponent />)}>
-          <MaterialIcons name="camera" size={24} color="white" />
+          <Image
+            source={require('../IMAGENES/Iconos/Sin título-3.png')} 
+            style={styles.navIcon}
+          />
           <Text style={styles.navText}>Cámara</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<MapContent />)}>
-          <MaterialIcons name="map" size={24} color="white" />
+          <Image
+            source={require('../IMAGENES/Iconos/Sin título-4.png')} 
+            style={styles.navIcon}
+          />
           <Text style={styles.navText}>Mapa</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<SettingsContent />)}>
-          <MaterialIcons name="settings" size={24} color="white" />
+          <Image
+            source={require('../IMAGENES/Iconos/Sin título-1.png')} 
+            style={styles.navIcon}
+          />
           <Text style={styles.navText}>Ajustes</Text>
         </TouchableOpacity>
       </View>
@@ -49,6 +63,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'flex-start',
     padding: 10,
+    backgroundColor: '#dfccb2',
   },
   contentArea: {
     flex: 1,
@@ -59,7 +74,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: '#008000',
+    backgroundColor: '#F4EFEC',
     height: 60,
     width: '109%',
     position: 'absolute',
@@ -69,8 +84,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  navIcon: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
+  },
   navText: {
-    color: 'white',
+    color: '#000E5C',
     fontSize: 12,
   },
 });
