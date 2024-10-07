@@ -14,20 +14,28 @@ const Stack = createStackNavigator();
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
 
   useEffect(() => {
     const checkLoginStatus = async () => {
       const loggedIn = await AsyncStorage.getItem('usuarios');
       setIsLoggedIn(loggedIn === 'true');
+      setIsLoading(false); // Cambia a false cuando termina de verificar
     };
     checkLoginStatus();
   }, []);
+
+  if (isLoading) {
+    return null; // Aquí puedes retornar una pantalla de carga si prefieres
+  }
+  
 
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName={isLoggedIn ? "GreenSteps" : "Home"}>
         <Stack.Screen name="Home" component={HomeScreen} options={{headerShown: false}} />
-        <Stack.Screen name="Login" component={LoginScreen} options={{title: 'Iniciar Sesión'}} />
+        <Stack.Screen name="LoginScreen" component={LoginScreen} options={{title: 'Iniciar Sesión'}} />
         <Stack.Screen name="GreenSteps" component={GreenSteps} options={{title: 'GreenSteps'}} />
         <Stack.Screen name="Mapas" component={MapaScreen} options={{title: 'Mapas'}} />
       </Stack.Navigator>

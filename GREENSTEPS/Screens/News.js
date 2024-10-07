@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { StyleSheet, Alert, View, Text, Image, TouchableOpacity, TextInput, FlatList, useWindowDimensions, Linking, Button, ActivityIndicator } from 'react-native';
-
+import residuosmarinos from '../IMAGENES/residuos-marinos.webp';
+import Clima from '../IMAGENES/Climatico.webp';
+import Tecno from '../IMAGENES/Tecnologia.jpeg';
 
 // Array de noticias
 
@@ -9,19 +11,22 @@ const noticias = [
       id: '1',
       titulo: 'Cambio climático amenaza a la biodiversidad',
       descripcion: 'El calentamiento global pone en riesgo a miles de especies.',
-      url: 'https://www.noticias1.com',
+      url: 'https://www.bbc.com/mundo/noticias-58143985#:~:text=El%20calentamiento%20global%20provocado%20por%20los%20humanos%20ha%20causado',
+      imagen: Clima,
     },
     {
       id: '2',
       titulo: 'Innovaciones verdes para el futuro',
       descripcion: 'Nuevas tecnologías están cambiando la manera en que cuidamos el planeta.',
-      url: 'https://www.noticias2.com',
+      url: 'https://es.weforum.org/agenda/2024/09/10-nuevas-tendencias-tecnologicas-transformando-la-observacion-de-la-tierra-y-la-inteligencia-climatica/#:~:text=Cuando%20se%20utilizan%20junto%20con%20los%20datos%20de%20sat%C3%A9lite,%2010',
+      imagen: Tecno,
     },
     {
       id: '3',
       titulo: 'Reducción del plástico en los océanos',
       descripcion: 'Proyectos globales buscan reducir los desechos plásticos en los océanos.',
-      url: 'https://www.noticias3.com',
+      url: 'https://news.un.org/es/story/2021/10/1498752#:~:text=Una%20estrategia%20que%20conlleve%20una%20soluci%C3%B3n%20%C3%BAnica%20destinada%20a',
+      imagen: residuosmarinos,
     },
   ];
   
@@ -33,6 +38,7 @@ const noticias = [
   
     return (
       <TouchableOpacity onPress={handlePress} style={styles.card}>
+       <Image source={noticia.imagen} style={styles.cardImage} /> 
         <View style={styles.cardContent}>
           <Text style={styles.cardTitle}>{noticia.titulo}</Text>
           <Text style={styles.cardDescription}>{noticia.descripcion}</Text>
@@ -82,6 +88,12 @@ const noticias = [
     },
     cardContent: {
       flex: 1,
+    },
+    cardImage: {
+      width: '100%',        
+      height: 200,          
+      resizeMode: 'cover',  
+      borderRadius: 8,      
     },
     cardTitle: {
       fontSize: 18,
