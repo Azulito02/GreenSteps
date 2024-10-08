@@ -1,27 +1,24 @@
+
 {
   "expo": {
-    "name": "GREENSTEPS",
-    "slug": "GREENSTEPS",
+    "name": "your-app-name",
+    "slug": "your-app-slug",
     "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
+    "platforms": ["ios", "android"],
     "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to allow users to upload profile pictures.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to allow profile picture selection."
       }
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
+    "android": {
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+        
+      ]
     }
   }
 }
+

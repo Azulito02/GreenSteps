@@ -81,14 +81,18 @@ const HomeScreen = ({ navigation }) => {
       <View style={styles.bottomContent}>
         <TouchableOpacity 
           style={styles.button} 
-          onPress={() => {addUser(); navigation.navigate('GreenSteps');}}
+          onPress={() => {addUser(); navigation.navigate('LoginScreen');}}
         >
           <Text style={styles.buttonText}>Inicio</Text>
         </TouchableOpacity>
       </View>
     </View>
+
+    
   );
 };
+
+
 
 const styles = StyleSheet.create({
   container: {
