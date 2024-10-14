@@ -29,18 +29,18 @@ export default function GreenSteps() {
             source={require('../IMAGENES/Iconos/Sin título-2.png')} 
             style={styles.navIcon}
           />
-          <Text style={styles.navText}>News</Text>
+          <Text style={styles.navText}>Noticias</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ImagePickerComponent />)}>
           <Image
-            source={require('../IMAGENES/Iconos/Sin título-3.png')} 
+            source={require('../IMAGENES/Iconos/camara.png')} 
             style={styles.navIcon}
           />
           <Text style={styles.navText}>Cámara</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<MapContent />)}>
           <Image
-            source={require('../IMAGENES/Iconos/Sin título-4.png')} 
+            source={require('../IMAGENES/Iconos/mapa.png')} 
             style={styles.navIcon}
           />
           <Text style={styles.navText}>Mapa</Text>

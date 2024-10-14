@@ -81,7 +81,7 @@ const HomeScreen = ({ navigation }) => {
       <View style={styles.bottomContent}>
         <TouchableOpacity 
           style={styles.button} 
-          onPress={() => {addUser(); navigation.navigate('LoginScreen');}}
+          onPress={() => {addUser(); navigation.navigate('GreenSteps');}}
         >
           <Text style={styles.buttonText}>Inicio</Text>
         </TouchableOpacity>
