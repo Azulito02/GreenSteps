@@ -6,6 +6,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getFirestore, collection, addDoc, getDocs, Timestamp } from 'firebase/firestore';
 import { getApp } from 'firebase/app';
 import Icon from 'react-native-vector-icons/Ionicons'; // Agregar esta línea
+import * as Location from 'expo-location';
 
 const app = getApp();
 const firestore = getFirestore(app);
@@ -20,6 +21,7 @@ const ReportContent = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [reportes, setReportes] = useState([]);
   const [isViewingReportes, setIsViewingReportes] = useState(true);
+  const [location, setLocation] = useState(null);
 
   useEffect(() => {
     fetchReportes();
@@ -37,6 +39,19 @@ const ReportContent = () => {
       console.error('Error al obtener los reportes: ', error);
     }
   };
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Se necesita el permiso de ubicación para continuar.');
+        return;
+      }
+  
+      let currentLocation = await Location.getCurrentPositionAsync({});
+      setLocation(currentLocation.coords);
+    })();
+  }, []);
 
   const pickMedia = async () => {
     setIsLoading(true);
@@ -74,7 +89,7 @@ const ReportContent = () => {
       setIsLoading(true);
       let fotoURL = '';
       let videoURL = '';
-
+  
       for (const item of media) {
         if (item.type === 'image') {
           fotoURL = await uploadMedia(item.uri, 'image');
@@ -82,7 +97,7 @@ const ReportContent = () => {
           videoURL = await uploadMedia(item.uri, 'video');
         }
       }
-
+  
       await addDoc(collection(firestore, 'reportes'), {
         descripcion,
         titulo,
@@ -91,8 +106,12 @@ const ReportContent = () => {
         foto: fotoURL,
         video: videoURL,
         comentario,
+        coordenadas: {
+          latitud: location?.latitude || 0,
+          longitud: location?.longitude || 0,
+        },
       });
-
+  
       alert('Reporte enviado exitosamente.');
       setDescripcion('');
       setTitulo('');
