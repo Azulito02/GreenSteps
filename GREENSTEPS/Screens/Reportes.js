@@ -161,8 +161,14 @@ const ReportContent = () => {
       <Text style={styles.reporteText}>Estado: {item.estado}</Text>
       <Text style={styles.reporteText}>Comentario: {item.comentario}</Text>
       <Text style={styles.reporteDate}>Fecha: {item.fecha_reportes.toDate().toString()}</Text>
+      {item.coordenadas && (
+        <Text style={styles.reporteText}>
+          Coordenadas: Latitud: {item.coordenadas.latitud}, Longitud: {item.coordenadas.longitud}
+        </Text>
+      )}
     </View>
   );
+  
 
   return (
     <View style={styles.container}>
