@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
 import ReportContent from './Reportes';
 import NoticiasContent from './News';
-import MapContent from './Mapa';
+import MapContent from './MapContent';
 import SettingsContent from './Ajustes';
 import ImagePickerComponent from '../Componentes/ImagePickerComponent'; // Asegúrate de que la ruta sea correcta
 

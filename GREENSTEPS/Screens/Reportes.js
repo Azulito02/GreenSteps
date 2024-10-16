@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import { StyleSheet, View, Text, Image, TouchableOpacity, TextInput, FlatList, Button, ActivityIndicator } from 'react-native';
 import { Video } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
@@ -22,6 +23,11 @@ const ReportContent = () => {
   const [reportes, setReportes] = useState([]);
   const [isViewingReportes, setIsViewingReportes] = useState(true);
   const [location, setLocation] = useState(null);
+  const navigation = useNavigation();
+
+  const openMap = (latitude, longitude) => {
+    navigation.navigate('Mapa', { latitude, longitude });
+  };
 
   useEffect(() => {
     fetchReportes();
@@ -160,12 +166,15 @@ const ReportContent = () => {
       )}
       <Text style={styles.reporteText}>Estado: {item.estado}</Text>
       <Text style={styles.reporteText}>Comentario: {item.comentario}</Text>
-      <Text style={styles.reporteDate}>Fecha: {item.fecha_reportes.toDate().toString()}</Text>
-      {item.coordenadas && (
-        <Text style={styles.reporteText}>
-          Coordenadas: Latitud: {item.coordenadas.latitud}, Longitud: {item.coordenadas.longitud}
-        </Text>
-      )}
+      <Text
+        style={[styles.reporteText, { color: 'blue' }]}
+        onPress={() => openMap(item.coordenadas.latitud, item.coordenadas.longitud)}
+      >
+        Ver en el mapa
+      </Text>
+      <Text style={styles.reporteDate}>
+        Fecha: {item.fecha_reportes.toDate().toString()}
+      </Text>
     </View>
   );
   

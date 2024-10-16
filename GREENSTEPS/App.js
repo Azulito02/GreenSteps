@@ -7,8 +7,9 @@ import { doc, setDoc } from "firebase/firestore";
 import { db } from "./bd/firebaseconfig.js";
 import GreenSteps from './Screens/GreenSteps.js';
 import LoginScreen from './Screens/LoginScreen.js';
-import MapaScreen from './Screens/Mapa.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import MapContent from './Screens/MapContent.js';
+
 
 const Stack = createStackNavigator();
 
@@ -37,7 +38,7 @@ export default function App() {
         <Stack.Screen name="Home" component={HomeScreen} options={{headerShown: false}} />
         <Stack.Screen name="LoginScreen" component={LoginScreen} options={{title: 'Iniciar Sesión'}} />
         <Stack.Screen name="GreenSteps" component={GreenSteps} options={{title: 'GreenSteps'}} />
-        <Stack.Screen name="Mapas" component={MapaScreen} options={{title: 'Mapas'}} />
+        <Stack.Screen name="Mapa" component={MapContent} options={{title: 'Mapa'}} />
       </Stack.Navigator>
     </NavigationContainer>
   );
