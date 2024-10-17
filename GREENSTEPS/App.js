@@ -9,6 +9,8 @@ import GreenSteps from './Screens/GreenSteps.js';
 import LoginScreen from './Screens/LoginScreen.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MapContent from './Screens/MapContent.js';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import TabNavigator from './Screens/TabNavigator.js';
 
 
 const Stack = createStackNavigator();
@@ -39,6 +41,7 @@ export default function App() {
         <Stack.Screen name="LoginScreen" component={LoginScreen} options={{title: 'Iniciar Sesión'}} />
         <Stack.Screen name="GreenSteps" component={GreenSteps} options={{title: 'GreenSteps'}} />
         <Stack.Screen name="Mapa" component={MapContent} options={{title: 'Mapa'}} />
+        <Stack.Screen name="HomeTabs" component={TabNavigator} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
 import ReportContent from './Reportes';
 import NoticiasContent from './News';
 import MapContent from './MapContent';
-import SettingsContent from './Ajustes';
+import SettingsContent from './AjustesScreen';
 import ImagePickerComponent from '../Componentes/ImagePickerComponent'; // Asegúrate de que la ruta sea correcta
 
 export default function GreenSteps() {
