@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { getApp, initializeApp } from 'firebase/app';
+import { getApp } from 'firebase/app';
 import { StyleSheet, View, Text, Image, TouchableOpacity, TextInput, FlatList, Linking, Button, ActivityIndicator, Alert } from 'react-native';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import { getFirestore, collection, getDocs, addDoc } from 'firebase/firestore';
-
+import Icon from 'react-native-vector-icons/Ionicons'; // Asegúrate de tener esta librería instalada
 
 const app = getApp();
 const firestore = getFirestore(app);
@@ -16,11 +16,12 @@ const NoticiasContent = () => {
   const [titulo, setTitulo] = useState('');
   const [foto, setFoto] = useState(null);
   const [url, setUrl] = useState('');
+  const [isFormVisible, setIsFormVisible] = useState(false);
 
   useEffect(() => {
     const fetchNoticias = async () => {
       try {
-        const querySnapshot = await getDocs(collection(firestore, 'articulos')); // Reemplaza 'noticias' con el nombre de tu colección
+        const querySnapshot = await getDocs(collection(firestore, 'articulos'));
         const noticiasArray = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
@@ -39,18 +40,12 @@ const NoticiasContent = () => {
   const agregarNoticia = async () => {
     if (titulo && foto && url) {
       try {
-        // Convertir la imagen en una URL accesible
         const response = await fetch(foto);
         const blob = await response.blob();
-        const imageRef = ref(storage, `images/${new Date().toISOString()}.jpg`); // Define el nombre de la imagen en tu almacenamiento
-
-        // Subir la imagen a Firebase Storage
+        const imageRef = ref(storage, `images/${new Date().toISOString()}.jpg`);
         await uploadBytes(imageRef, blob);
-
-        // Obtener la URL de descarga de la imagen
         const photoURL = await getDownloadURL(imageRef);
 
-        // Agregar la noticia con la URL de la imagen
         await addDoc(collection(firestore, 'articulos'), {
           titulo,
           foto: photoURL,
@@ -62,7 +57,8 @@ const NoticiasContent = () => {
         setTitulo('');
         setFoto(null);
         setUrl('');
-        // Refrescar la lista de noticias
+        setIsFormVisible(false);
+
         const querySnapshot = await getDocs(collection(firestore, 'articulos'));
         const noticiasArray = querySnapshot.docs.map((doc) => ({
           id: doc.id,
@@ -87,7 +83,7 @@ const NoticiasContent = () => {
     });
 
     if (!resultado.canceled) {
-      setFoto(resultado.assets[0].uri); // Establecer la URI de la imagen seleccionada
+      setFoto(resultado.assets[0].uri);
     }
   };
 
@@ -114,29 +110,39 @@ const NoticiasContent = () => {
     <View style={styles.contentContainer}>
       <Text style={styles.headerText}>Noticias</Text>
 
-      <View style={styles.formContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Título de la noticia"
-          value={titulo}
-          onChangeText={setTitulo}
-        />
-        <Button title="Seleccionar Imagen" onPress={seleccionarImagen} />
-        {foto && <Image source={{ uri: foto }} style={styles.selectedImage} />}
-        <TextInput
-          style={styles.input}
-          placeholder="URL de la noticia"
-          value={url}
-          onChangeText={setUrl}
-        />
-        <Button title="Agregar Noticia" onPress={agregarNoticia} />
-      </View>
+      {isFormVisible && (
+        <View style={styles.formContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Título de la noticia"
+            value={titulo}
+            onChangeText={setTitulo}
+          />
+          <Button title="Seleccionar Imagen" onPress={seleccionarImagen} />
+          {foto && <Image source={{ uri: foto }} style={styles.selectedImage} />}
+          <TextInput
+            style={styles.input}
+            placeholder="URL de la noticia"
+            value={url}
+            onChangeText={setUrl}
+          />
+          <Button title="Agregar Noticia" onPress={agregarNoticia} />
+        </View>
+      )}
 
       <FlatList
         data={noticias}
         renderItem={({ item }) => <NoticiaItem noticia={item} />}
         keyExtractor={(item) => item.id}
       />
+
+      {/* Botón flotante para mostrar/ocultar el formulario */}
+      <TouchableOpacity
+        style={styles.floatingButton}
+        onPress={() => setIsFormVisible(!isFormVisible)}
+      >
+        <Icon name="add-circle" size={60} color="#007bff" />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -182,30 +188,24 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 5,
   },
-  cardContent: {
-    flex: 1,
-  },
   cardImage: {
     width: '100%',
     height: 200,
     resizeMode: 'cover',
     borderRadius: 8,
   },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  loading: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   selectedImage: {
     width: '100%',
     height: 200,
     borderRadius: 8,
     marginVertical: 10,
+  },
+  floatingButton: {
+    position: 'absolute',
+    bottom: 50,
+    right: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
