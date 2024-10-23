@@ -3,9 +3,13 @@ import { StyleSheet, Alert, View, TouchableOpacity } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { collection, getDocs, addDoc, updateDoc, doc, getFirestore } from 'firebase/firestore';
+import { getApp } from 'firebase/app';
+
+const app = getApp();
+const firestore = getFirestore(app);
 
 const MapContent = ({ route, navigation }) => {
-  // Obtén las coordenadas desde los parámetros de la ruta o usa las iniciales si no están disponibles
   const initialLatitude = route?.params?.latitude || 12.8654; // Coordenada predeterminada
   const initialLongitude = route?.params?.longitude || -85.2072; // Coordenada predeterminada
 
@@ -16,15 +20,16 @@ const MapContent = ({ route, navigation }) => {
       longitude: initialLongitude,
       title: 'Ubicación inicial',
       description: 'Este es el lugar preciso al que se hace referencia',
-      severity: 'blue',
+      severity: 'blue', // Pin azul de referencia
     },
-  ]); // Estado inicial de los marcadores
+  ]);
   const [location, setLocation] = useState(null);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
+  const [loadingMarkers, setLoadingMarkers] = useState(true);
 
+  // Pedir permisos de ubicación
   useEffect(() => {
     (async () => {
-      // Pedir permisos de ubicación al usuario
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permiso denegado', 'Necesitamos acceso a tu ubicación para centrar el mapa.');
@@ -34,6 +39,26 @@ const MapContent = ({ route, navigation }) => {
     })();
   }, []);
 
+  // Cargar los pines desde Firestore
+  useEffect(() => {
+    const fetchMarkers = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(firestore, 'Marcadores'));
+        const loadedMarkers = [];
+        querySnapshot.forEach((doc) => {
+          loadedMarkers.push({ id: doc.id, ...doc.data() });
+        });
+        setMarkers((currentMarkers) => [...currentMarkers, ...loadedMarkers]);
+        setLoadingMarkers(false); // Marcar que los pines han sido cargados
+      } catch (error) {
+        console.error('Error al cargar los marcadores:', error);
+      }
+    };
+
+    fetchMarkers();
+  }, []);
+
+  // Función para centrar el mapa en la ubicación actual del usuario
   const centerOnUserLocation = async () => {
     if (!hasLocationPermission) {
       Alert.alert('Permiso de ubicación no otorgado');
@@ -48,7 +73,6 @@ const MapContent = ({ route, navigation }) => {
       longitude,
     });
 
-    // Centrar el mapa en la ubicación actual del usuario
     mapRef.current.animateToRegion({
       latitude,
       longitude,
@@ -57,7 +81,7 @@ const MapContent = ({ route, navigation }) => {
     });
   };
 
-  // Función para agregar un nuevo pin (marcador) en la ubicación donde el usuario tocó
+  // Función para agregar un nuevo pin al mapa y guardarlo en Firestore
   const handleMapPress = (event) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
 
@@ -85,21 +109,27 @@ const MapContent = ({ route, navigation }) => {
     );
   };
 
-  // Función para añadir el nuevo pin al estado de markers
-  const addNewPin = (latitude, longitude, severity) => {
-    setMarkers((currentMarkers) => [
-      ...currentMarkers,
-      {
-        latitude,
-        longitude,
-        title: 'Nuevo pin',
-        description: 'Pin añadido por el usuario',
-        severity,
-      },
-    ]);
+  // Añadir un nuevo pin a Firestore
+  const addNewPin = async (latitude, longitude, severity) => {
+    const newMarker = {
+      latitude,
+      longitude,
+      severity,
+    };
+
+    // Actualiza el estado local
+    setMarkers((currentMarkers) => [...currentMarkers, newMarker]);
+
+    // Guarda el nuevo pin en Firestore
+    try {
+      await addDoc(collection(firestore, 'Marcadores'), newMarker);
+      console.log('Pin guardado exitosamente en Firestore');
+    } catch (error) {
+      console.error('Error al guardar el pin:', error);
+    }
   };
 
-  // Función para obtener el color del pin en función de la severidad
+  // Obtener el color del pin basado en la severidad
   const getPinColor = (severity) => {
     switch (severity) {
       case 'red':
@@ -113,7 +143,7 @@ const MapContent = ({ route, navigation }) => {
     }
   };
 
-  // Función para cambiar el color de un pin al hacer clic
+  // Cambiar el color de un pin al hacer clic
   const handleMarkerPress = (index) => {
     Alert.alert(
       'Cambiar color del pin',
@@ -139,13 +169,25 @@ const MapContent = ({ route, navigation }) => {
     );
   };
 
-  // Función para cambiar la severidad de un pin y actualizar el estado
-  const changePinColor = (index, newSeverity) => {
+  // Cambiar la severidad de un pin y actualizar Firestore
+  const changePinColor = async (index, newSeverity) => {
+    const markerToUpdate = markers[index];
+
+    // Actualiza el estado local
     setMarkers((currentMarkers) =>
       currentMarkers.map((marker, markerIndex) =>
         markerIndex === index ? { ...marker, severity: newSeverity } : marker
       )
     );
+
+    // Actualiza el pin en Firestore
+    try {
+      const markerDoc = doc(firestore, 'Marcadores', markerToUpdate.id); // Usa el ID del documento
+      await updateDoc(markerDoc, { severity: newSeverity });
+      console.log('Pin actualizado exitosamente en Firestore');
+    } catch (error) {
+      console.error('Error al actualizar el pin:', error);
+    }
   };
 
   return (
@@ -156,7 +198,7 @@ const MapContent = ({ route, navigation }) => {
         initialRegion={{
           latitude: initialLatitude,
           longitude: initialLongitude,
-          latitudeDelta: 0.02, // Ajustar para acercar más al punto
+          latitudeDelta: 0.02,
           longitudeDelta: 0.02,
         }}
         onPress={handleMapPress}
@@ -168,8 +210,8 @@ const MapContent = ({ route, navigation }) => {
               latitude: marker.latitude,
               longitude: marker.longitude,
             }}
-            title={marker.title}
-            description={marker.description}
+            title={marker.title || 'Pin'}
+            description={marker.description || ''}
             pinColor={getPinColor(marker.severity)}
             onPress={() => handleMarkerPress(index)}
           />
