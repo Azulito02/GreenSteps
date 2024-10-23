@@ -1,63 +1,66 @@
-import React, { useEffect, useState } from 'react';
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Image, ImageBackground, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react'; 
+import { StyleSheet, View, Image, ImageBackground, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { doc, setDoc } from "firebase/firestore"; 
+import { doc, getDoc } from "firebase/firestore"; 
 import { db } from "./bd/firebaseconfig.js";
 import GreenSteps from './Screens/GreenSteps.js';
 import LoginScreen from './Screens/LoginScreen.js';
-import MapaScreen from './Screens/Mapa.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import MapContent from './Screens/Mapa.js';
+
 
 const Stack = createStackNavigator();
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-
-
+  
   useEffect(() => {
-    const checkLoginStatus = async () => {
-      const loggedIn = await AsyncStorage.getItem('usuarios');
-      setIsLoggedIn(loggedIn === 'true');
-      setIsLoading(false); // Cambia a false cuando termina de verificar
+    const checkUserStatus = async () => {
+      const loggedIn = await AsyncStorage.getItem('usuarios'); // Verifica si el usuario ya ha iniciado sesión
+
+      if (loggedIn === 'true') {
+        
+        const userDoc = await getDoc(doc(db, "usuarios", email));
+
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setUserRole(data.rol); // Asumimos que tienes un campo 'rol' en tu documento de usuario
+        }
+      }
+
+      setIsLoading(false);
     };
-    checkLoginStatus();
+
+    checkUserStatus();
   }, []);
 
   if (isLoading) {
     return null; // Aquí puedes retornar una pantalla de carga si prefieres
   }
-  
 
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName={isLoggedIn ? "GreenSteps" : "Home"}>
-        <Stack.Screen name="Home" component={HomeScreen} options={{headerShown: false}} />
-        <Stack.Screen name="LoginScreen" component={LoginScreen} options={{title: 'Iniciar Sesión'}} />
-        <Stack.Screen name="GreenSteps" component={GreenSteps} options={{title: 'GreenSteps'}} />
-        <Stack.Screen name="Mapas" component={MapaScreen} options={{title: 'Mapas'}} />
+      <Stack.Navigator initialRouteName={userRole === 'admin' ? "GreenSteps" : "LoginScreen"}>
+        <Stack.Screen 
+          name="LoginScreen" 
+          component={LoginScreen} 
+          options={{ title: 'Iniciar Sesión', headerShown: true }} 
+        />
+        <Stack.Screen 
+          name="GreenSteps" 
+          component={GreenSteps} 
+          options={{ title: 'GreenSteps', headerShown: false }} // Oculta el encabezado aquí
+        />
+        <Stack.Screen name="Mapa" component={MapContent} options={{ title: 'Mapa' }} />
+        <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
 
 const HomeScreen = ({ navigation }) => {
-  const addUser = async () => {
-    try {
-      await setDoc(doc(db, "usuarios", "2"), {
-        contraseña: "12345678",
-        correo_electronico: "milton@gmail.com",
-        foto_perfil: "milton.png",
-        nombre: "Milton Augusto Oporta Lopez"
-      });
-      console.log("Documento agregado correctamente.");
-    } catch (error) {
-      console.error("Error al agregar el documento: ", error);
-    }
-  };
-
   return (
     <View style={styles.container}>
       <ImageBackground
@@ -81,18 +84,14 @@ const HomeScreen = ({ navigation }) => {
       <View style={styles.bottomContent}>
         <TouchableOpacity 
           style={styles.button} 
-          onPress={() => {addUser(); navigation.navigate('GreenSteps');}}
+          onPress={() => navigation.navigate('LoginScreen')}
         >
-          <Text style={styles.buttonText}>Inicio</Text>
+          <Text style={styles.buttonText}>Continuar a Iniciar Sesión</Text>
         </TouchableOpacity>
       </View>
     </View>
-
-    
   );
 };
-
-
 
 const styles = StyleSheet.create({
   container: {
@@ -152,7 +151,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: 'blue',
-    fontSize: 32,
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });

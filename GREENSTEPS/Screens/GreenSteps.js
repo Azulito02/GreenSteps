@@ -1,13 +1,74 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import ReportContent from './Reportes';
 import NoticiasContent from './News';
+import NoticiasContentUser from './Usuarios/NewsUser';
 import MapContent from './Mapa';
 import SettingsContent from './Ajustes';
-import ImagePickerComponent from '../Componentes/ImagePickerComponent'; // Asegúrate de que la ruta sea correcta
+import ImagePickerComponent from '../Componentes/ImagePickerComponent';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function GreenSteps() {
-  const [activeComponent, setActiveComponent] = useState(<ReportContent />);
+  const [activeComponent, setActiveComponent] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      try {
+        const storedRole = await AsyncStorage.getItem('rol');
+        if (storedRole) {
+          setUserRole(storedRole);
+          if (storedRole === 'administrador') {
+            setActiveComponent(<ReportContent />);
+          } else {
+            setActiveComponent(<NoticiasContent />);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user role: ', error);
+      }
+    };
+
+    fetchUserRole();
+  }, []);
+
+  const renderButtonsForadministrador = () => (
+    <>
+      <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ReportContent />)}>
+        <Text style={styles.navText}>Reportes</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<MapContent />)}>
+        <Text style={styles.navText}>Mapa</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<NoticiasContent />)}>
+        <Text style={styles.navText}>Noticias</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ImagePickerComponent />)}>
+        <Text style={styles.navText}>Cámara</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<SettingsContent />)}>
+        <Text style={styles.navText}>Ajustes</Text>
+      </TouchableOpacity>
+    </>
+  );
+
+  const renderButtonsForUser = () => (
+    <>
+    <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ReportContent />)}>
+        <Text style={styles.navText}>Reportes</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<NoticiasContentUser />)}>
+        <Text style={styles.navText}>Noticias</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<SettingsContent />)}>
+        <Text style={styles.navText}>Ajustes</Text>
+      </TouchableOpacity>
+    </>
+
+    
+  );
 
   return (
     <View style={styles.container}>
@@ -17,41 +78,7 @@ export default function GreenSteps() {
 
       {/* Barra de navegación */}
       <View style={styles.navBar}>
-        <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ReportContent />)}>
-          <Image
-            source={require('../IMAGENES/Iconos/Sin título-1.png')} 
-            style={styles.navIcon}
-          />
-          <Text style={styles.navText}>Reportes</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<NoticiasContent />)}>
-          <Image
-            source={require('../IMAGENES/Iconos/Sin título-2.png')} 
-            style={styles.navIcon}
-          />
-          <Text style={styles.navText}>Noticias</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ImagePickerComponent />)}>
-          <Image
-            source={require('../IMAGENES/Iconos/camara.png')} 
-            style={styles.navIcon}
-          />
-          <Text style={styles.navText}>Cámara</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<MapContent />)}>
-          <Image
-            source={require('../IMAGENES/Iconos/mapa.png')} 
-            style={styles.navIcon}
-          />
-          <Text style={styles.navText}>Mapa</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<SettingsContent />)}>
-          <Image
-            source={require('../IMAGENES/Iconos/Sin título-1.png')} 
-            style={styles.navIcon}
-          />
-          <Text style={styles.navText}>Ajustes</Text>
-        </TouchableOpacity>
+        {userRole === 'administrador' ? renderButtonsForadministrador() : renderButtonsForUser()}
       </View>
     </View>
   );
@@ -76,18 +103,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F4EFEC',
     height: 60,
-    width: '109%',
+    width: '100%',
     position: 'absolute',
     bottom: 0,
   },
   navButton: {
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  navIcon: {
-    width: 24,
-    height: 24,
-    resizeMode: 'contain',
   },
   navText: {
     color: '#000E5C',

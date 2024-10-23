@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, TextInput, Button, Alert, Image } from 'react-native';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, getDoc, doc } from 'firebase/firestore';
 import { db } from '../bd/firebaseconfig';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Asegúrate de instalar esta librería
 import * as ImagePicker from 'expo-image-picker';
@@ -9,7 +9,24 @@ export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [fotoPerfil, setFotoPerfil] = useState(null); // Cambiar a null inicialmente
+  const [role, setRole] = useState('usuario'); // 'usuario' o 'administrador'
+  const [fotoPerfil, setFotoPerfil] = useState(null);
+
+  useEffect(() => {
+    checkLoginStatus();
+  }, []);
+
+  const checkLoginStatus = async () => {
+    try {
+      const userLoggedIn = await AsyncStorage.getItem('userLoggedIn');
+      const userRole = await AsyncStorage.getItem('rol');
+      if (userLoggedIn && userRole) {
+        navigation.navigate('GreenSteps', { role: userRole });
+      }
+    } catch (error) {
+      console.error('Error al verificar el estado de login: ', error);
+    }
+  };
 
   const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -17,14 +34,12 @@ export default function LoginScreen({ navigation }) {
   };
 
   const pickImage = async () => {
-    // Solicitar permiso para acceder a la galería
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permiso denegado', 'Se requieren permisos para acceder a la biblioteca de imágenes.');
       return;
     }
 
-    // Lanzar el selector de imagen
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -33,7 +48,7 @@ export default function LoginScreen({ navigation }) {
     });
 
     if (!result.canceled) {
-      setFotoPerfil(result.assets[0].uri); // Actualiza el estado con la URI de la imagen
+      setFotoPerfil(result.assets[0].uri);
     }
   };
 
@@ -53,11 +68,15 @@ export default function LoginScreen({ navigation }) {
         email: email,
         password: password,
         name: name,
-        foto_perfil: fotoPerfil, // Se almacena la URI de la imagen
+        foto_perfil: fotoPerfil,
+        rol: role, // Guardar el rol asignado
       });
 
-      await AsyncStorage.setItem('usuarios', 'true');
-      navigation.navigate('GreenSteps');
+      // Guardar los detalles de la sesión
+      await AsyncStorage.setItem('userLoggedIn', 'true');
+      await AsyncStorage.setItem('rol', role);
+      navigation.navigate('GreenSteps', { role });
+
       console.log('Documento agregado correctamente con ID: ', docRef.id);
     } catch (error) {
       console.error('Error al registrar el usuario: ', error);
@@ -66,19 +85,14 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-       <Image 
-        source={require('../IMAGENES/logo2.png')} // Ruta de la imagen que deseas mostrar
+      <Image 
+        source={require('../IMAGENES/logo2.png')}
         style={styles.logo}
       />
-    
-      {/* Mostrar la imagen seleccionada */}
       {fotoPerfil && (
         <Image source={{ uri: fotoPerfil }} style={styles.profileImage} />
       )}
-
       <Button title="Seleccionar Foto de Perfil" onPress={pickImage} />
-
-     
       <TextInput  
         style={styles.input}
         placeholder="Correo"
@@ -99,10 +113,8 @@ export default function LoginScreen({ navigation }) {
         value={name}
         onChangeText={setName}
       />
-      
-      {/* Botón para seleccionar la imagen de perfil */}
-   
-      
+      <Button title="Registrar como Administrador" onPress={() => setRole('administrador')} />
+      <Button title="Registrar como Usuario" onPress={() => setRole('usuario')} />
       <Button title="Iniciar Sesion" onPress={handleRegister} />
     </View>
   );
@@ -129,9 +141,9 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
   },
   profileImage: {
-    width: 100, // Ajusta el tamaño según tus necesidades
+    width: 100,
     height: 100,
-    borderRadius: 50, // Para hacerla circular
+    borderRadius: 50,
     alignSelf: 'center',
     marginBottom: 20,
   },
