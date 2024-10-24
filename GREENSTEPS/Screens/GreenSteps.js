@@ -3,10 +3,11 @@ import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import ReportContent from './Reportes';
 import NoticiasContent from './News';
 import NoticiasContentUser from './Usuarios/NewsUser';
-import MapContent from './Mapa';
-import SettingsContent from './Ajustes';
+import MapContent from './MapContent';
 import ImagePickerComponent from '../Componentes/ImagePickerComponent';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import AjustesScreen  from './AjustesScreen';
+
 
 export default function GreenSteps() {
   const [activeComponent, setActiveComponent] = useState(null);
@@ -46,7 +47,7 @@ export default function GreenSteps() {
       <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ImagePickerComponent />)}>
         <Text style={styles.navText}>Cámara</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<SettingsContent />)}>
+      <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<AjustesScreen />)}>
         <Text style={styles.navText}>Ajustes</Text>
       </TouchableOpacity>
     </>
@@ -62,7 +63,7 @@ export default function GreenSteps() {
         <Text style={styles.navText}>Noticias</Text>
       </TouchableOpacity>
       
-      <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<SettingsContent />)}>
+      <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<AjustesScreen />)}>
         <Text style={styles.navText}>Ajustes</Text>
       </TouchableOpacity>
     </>
@@ -103,7 +104,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F4EFEC',
     height: 60,
-    width: '100%',
+    width: '105%',
     position: 'absolute',
     bottom: 0,
   },

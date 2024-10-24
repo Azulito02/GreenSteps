@@ -1,13 +1,16 @@
-import React, { useEffect, useState } from 'react'; 
-import { StyleSheet, View, Image, ImageBackground, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StatusBar } from 'expo-status-bar';
+import { StyleSheet, Text, View, Image, ImageBackground, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { doc, getDoc } from "firebase/firestore"; 
+import { doc, setDoc } from "firebase/firestore"; 
 import { db } from "./bd/firebaseconfig.js";
 import GreenSteps from './Screens/GreenSteps.js';
 import LoginScreen from './Screens/LoginScreen.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import MapContent from './Screens/Mapa.js';
+import MapContent from './Screens/MapContent.js';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import TabNavigator from './Screens/TabNavigator.js';
 
 
 const Stack = createStackNavigator();
@@ -15,22 +18,29 @@ const Stack = createStackNavigator();
 export default function App() {
   const [userRole, setUserRole] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Estado de autenticación
+  const [email, setEmail] = useState(null); // Guardar el email
+
   useEffect(() => {
     const checkUserStatus = async () => {
-      const loggedIn = await AsyncStorage.getItem('usuarios'); // Verifica si el usuario ya ha iniciado sesión
+      const loggedIn = await AsyncStorage.getItem('isLoggedIn'); // Verifica si el usuario ya ha iniciado sesión
 
       if (loggedIn === 'true') {
-        
-        const userDoc = await getDoc(doc(db, "usuarios", email));
+        const storedEmail = await AsyncStorage.getItem('userEmail'); // Obtener el email almacenado
+        if (storedEmail) {
+          setEmail(storedEmail); // Guardar el email en el estado
 
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          setUserRole(data.rol); // Asumimos que tienes un campo 'rol' en tu documento de usuario
+          // Obtener el rol del usuario
+          const userDoc = await getDoc(doc(db, "usuarios", storedEmail));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            setUserRole(data.rol); // Asumimos que tienes un campo 'rol' en tu documento de usuario
+            setIsLoggedIn(true); // Establecer que el usuario ha iniciado sesión
+          }
         }
       }
 
-      setIsLoading(false);
+      setIsLoading(false); // Finalizar la carga
     };
 
     checkUserStatus();
@@ -42,21 +52,14 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName={userRole === 'admin' ? "GreenSteps" : "LoginScreen"}>
-        <Stack.Screen 
-          name="LoginScreen" 
-          component={LoginScreen} 
-          options={{ title: 'Iniciar Sesión', headerShown: true }} 
-        />
-        <Stack.Screen 
-          name="GreenSteps" 
-          component={GreenSteps} 
-          options={{ title: 'GreenSteps', headerShown: false }} // Oculta el encabezado aquí
-        />
-        <Stack.Screen name="Mapa" component={MapContent} options={{ title: 'Mapa' }} />
-        <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <Stack.Navigator initialRouteName={isLoggedIn ? "GreenSteps" : "Home"}>
+      <Stack.Screen name="Home" component={HomeScreen} options={{headerShown: false}} />
+      <Stack.Screen name="LoginScreen" component={LoginScreen} options={{title: 'Iniciar Sesión'}} />
+      <Stack.Screen name="GreenSteps" component={GreenSteps} options={{title: 'GreenSteps'}} />
+      <Stack.Screen name="Mapa" component={MapContent} options={{title: 'Mapa'}} />
+      <Stack.Screen name="HomeTabs" component={TabNavigator} options={{ headerShown: false }} />
+    </Stack.Navigator>
+  </NavigationContainer>
   );
 }
 
