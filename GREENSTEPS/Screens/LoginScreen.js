@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, TextInput, Button, Alert, Image } from 'react-native';
-import { collection, addDoc, getDoc, doc } from 'firebase/firestore';
-import { db } from '../bd/firebaseconfig';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // Asegúrate de instalar esta librería
-import * as ImagePicker from 'expo-image-picker';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { app } from '../bd/firebaseconfig';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const auth = getAuth(app);
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [role, setRole] = useState('usuario'); // 'usuario' o 'administrador'
-  const [fotoPerfil, setFotoPerfil] = useState(null);
 
   useEffect(() => {
     checkLoginStatus();
@@ -33,27 +31,8 @@ export default function LoginScreen({ navigation }) {
     return re.test(email);
   };
 
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permiso denegado', 'Se requieren permisos para acceder a la biblioteca de imágenes.');
-      return;
-    }
-
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      setFotoPerfil(result.assets[0].uri);
-    }
-  };
-
-  const handleRegister = async () => {
-    if (!email || !password || !name || !fotoPerfil) {
+  const handleLogin = () => {
+    if (!email || !password) {
       Alert.alert('Error', 'Todos los campos son obligatorios.');
       return;
     }
@@ -63,24 +42,42 @@ export default function LoginScreen({ navigation }) {
       return;
     }
 
-    try {
-      const docRef = await addDoc(collection(db, 'usuarios'), {
-        email: email,
-        password: password,
-        name: name,
-        foto_perfil: fotoPerfil,
-        rol: role, // Guardar el rol asignado
+    signInWithEmailAndPassword(auth, email, password)
+      .then(async (userCredential) => {
+        console.log('Signed in!');
+        await AsyncStorage.setItem('userLoggedIn', 'true');
+        const role = 'usuario'; // Puedes definir el rol aquí o recuperarlo de Firebase
+        await AsyncStorage.setItem('rol', role);
+        navigation.navigate('GreenSteps', { role });
+      })
+      .catch((error) => {
+        console.log(error);
+        Alert.alert(error.message);
       });
+  };
 
-      // Guardar los detalles de la sesión
-      await AsyncStorage.setItem('userLoggedIn', 'true');
-      await AsyncStorage.setItem('rol', role);
-      navigation.navigate('GreenSteps', { role });
-
-      console.log('Documento agregado correctamente con ID: ', docRef.id);
-    } catch (error) {
-      console.error('Error al registrar el usuario: ', error);
+  const handleCreateAccount = (role) => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Todos los campos son obligatorios.');
+      return;
     }
+
+    if (!validateEmail(email)) {
+      Alert.alert('Error', 'Por favor ingrese un email válido.');
+      return;
+    }
+
+    createUserWithEmailAndPassword(auth, email, password)
+      .then(async (userCredential) => {
+        console.log('Account created!');
+        await AsyncStorage.setItem('userLoggedIn', 'true');
+        await AsyncStorage.setItem('rol', role); // Guardar el rol (usuario o administrador)
+        navigation.navigate('GreenSteps', { role });
+      })
+      .catch((error) => {
+        console.log(error);
+        Alert.alert(error.message);
+      });
   };
 
   return (
@@ -89,10 +86,6 @@ export default function LoginScreen({ navigation }) {
         source={require('../IMAGENES/logo2.png')}
         style={styles.logo}
       />
-      {fotoPerfil && (
-        <Image source={{ uri: fotoPerfil }} style={styles.profileImage} />
-      )}
-      <Button title="Seleccionar Foto de Perfil" onPress={pickImage} />
       <TextInput  
         style={styles.input}
         placeholder="Correo"
@@ -107,15 +100,9 @@ export default function LoginScreen({ navigation }) {
         onChangeText={setPassword}
         secureTextEntry
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Nombre"
-        value={name}
-        onChangeText={setName}
-      />
-      <Button title="Registrar como Administrador" onPress={() => setRole('administrador')} />
-      <Button title="Registrar como Usuario" onPress={() => setRole('usuario')} />
-      <Button title="Iniciar Sesion" onPress={handleRegister} />
+      <Button title="Iniciar Sesión" onPress={handleLogin} />
+      <Button title="Crear Cuenta como Administrador" onPress={() => handleCreateAccount('administrador')} color="red" />
+      <Button title="Crear Cuenta como Usuario" onPress={() => handleCreateAccount('usuario')} color="green" />
     </View>
   );
 }
@@ -139,12 +126,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 10,
     paddingLeft: 8,
-  },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    alignSelf: 'center',
-    marginBottom: 20,
   },
 });
