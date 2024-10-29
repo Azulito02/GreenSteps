@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, TextInput, Button, Alert, Image } from 'react-native';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { app } from '../bd/firebaseconfig';
+import { collection, setDoc, doc, getDoc } from 'firebase/firestore';
+import { app, db } from '../bd/firebaseconfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const auth = getAuth(app);
@@ -31,7 +32,7 @@ export default function LoginScreen({ navigation }) {
     return re.test(email);
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Todos los campos son obligatorios.');
       return;
@@ -42,21 +43,26 @@ export default function LoginScreen({ navigation }) {
       return;
     }
 
-    signInWithEmailAndPassword(auth, email, password)
-      .then(async (userCredential) => {
-        console.log('Signed in!');
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userId = userCredential.user.uid;
+
+      const userDoc = await getDoc(doc(db, 'usuarios', userId));
+      if (userDoc.exists()) {
+        const role = userDoc.data().rol;
         await AsyncStorage.setItem('userLoggedIn', 'true');
-        const role = 'usuario'; // Puedes definir el rol aquí o recuperarlo de Firebase
         await AsyncStorage.setItem('rol', role);
         navigation.navigate('GreenSteps', { role });
-      })
-      .catch((error) => {
-        console.log(error);
-        Alert.alert(error.message);
-      });
+      } else {
+        Alert.alert('Error', 'No se encontró el rol del usuario.');
+      }
+    } catch (error) {
+      console.error('Error al iniciar sesión: ', error);
+      Alert.alert('Error', error.message);
+    }
   };
 
-  const handleCreateAccount = (role) => {
+  const handleCreateAccount = async (role) => {
     if (!email || !password) {
       Alert.alert('Error', 'Todos los campos son obligatorios.');
       return;
@@ -67,17 +73,22 @@ export default function LoginScreen({ navigation }) {
       return;
     }
 
-    createUserWithEmailAndPassword(auth, email, password)
-      .then(async (userCredential) => {
-        console.log('Account created!');
-        await AsyncStorage.setItem('userLoggedIn', 'true');
-        await AsyncStorage.setItem('rol', role); // Guardar el rol (usuario o administrador)
-        navigation.navigate('GreenSteps', { role });
-      })
-      .catch((error) => {
-        console.log(error);
-        Alert.alert(error.message);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userId = userCredential.user.uid;
+
+      await setDoc(doc(db, 'usuarios', userId), {
+        email: email,
+        rol: role,
       });
+
+      await AsyncStorage.setItem('userLoggedIn', 'true');
+      await AsyncStorage.setItem('rol', role);
+      navigation.navigate('GreenSteps', { role });
+    } catch (error) {
+      console.error('Error al crear cuenta: ', error);
+      Alert.alert('Error', error.message);
+    }
   };
 
   return (
