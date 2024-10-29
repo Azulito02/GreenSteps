@@ -62,6 +62,10 @@ export default function GreenSteps() {
       <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<NoticiasContentUser />)}>
         <Text style={styles.navText}>Noticias</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ImagePickerComponent />)}>
+        <Text style={styles.navText}>Cámara</Text>
+      </TouchableOpacity>
       
       <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<AjustesScreen />)}>
         <Text style={styles.navText}>Ajustes</Text>

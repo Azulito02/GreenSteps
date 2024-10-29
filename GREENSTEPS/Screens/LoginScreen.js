@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, Button, Alert, Image } from 'react-native';
+import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, Image } from 'react-native';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { collection, setDoc, doc, getDoc } from 'firebase/firestore';
+import { CommonActions } from '@react-navigation/native';
 import { app, db } from '../bd/firebaseconfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -20,7 +21,12 @@ export default function LoginScreen({ navigation }) {
       const userLoggedIn = await AsyncStorage.getItem('userLoggedIn');
       const userRole = await AsyncStorage.getItem('rol');
       if (userLoggedIn && userRole) {
-        navigation.navigate('GreenSteps', { role: userRole });
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'GreenSteps', params: { role: userRole } }],
+          })
+        );
       }
     } catch (error) {
       console.error('Error al verificar el estado de login: ', error);
@@ -52,7 +58,13 @@ export default function LoginScreen({ navigation }) {
         const role = userDoc.data().rol;
         await AsyncStorage.setItem('userLoggedIn', 'true');
         await AsyncStorage.setItem('rol', role);
-        navigation.navigate('GreenSteps', { role });
+        
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'GreenSteps', params: { role } }],
+          })
+        );
       } else {
         Alert.alert('Error', 'No se encontró el rol del usuario.');
       }
@@ -84,10 +96,16 @@ export default function LoginScreen({ navigation }) {
 
       await AsyncStorage.setItem('userLoggedIn', 'true');
       await AsyncStorage.setItem('rol', role);
-      navigation.navigate('GreenSteps', { role });
+      
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'GreenSteps', params: { role } }],
+        })
+      );
     } catch (error) {
       console.error('Error al crear cuenta: ', error);
-      Alert.alert('Error', error.message);
+      Alert.alert('Error cuenta ya existente');
     }
   };
 
@@ -103,6 +121,7 @@ export default function LoginScreen({ navigation }) {
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
+        placeholderTextColor="#a9a9a9"
       />
       <TextInput
         style={styles.input}
@@ -110,10 +129,17 @@ export default function LoginScreen({ navigation }) {
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        placeholderTextColor="#a9a9a9"
       />
-      <Button title="Iniciar Sesión" onPress={handleLogin} />
-      <Button title="Crear Cuenta como Administrador" onPress={() => handleCreateAccount('administrador')} color="red" />
-      <Button title="Crear Cuenta como Usuario" onPress={() => handleCreateAccount('usuario')} color="green" />
+      
+      <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+        <Text style={styles.buttonText}>Iniciar Sesión</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={[styles.createButton, { backgroundColor: '#4CAF50' }]} onPress={() => handleCreateAccount('usuario')}>
+        <Text style={styles.buttonText}>Crear Cuenta </Text>
+      </TouchableOpacity>
+
     </View>
   );
 }
@@ -122,20 +148,49 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#f0f4f7',
   },
   logo: {
-    width: 200,
-    height: 119,
-    alignSelf: 'center',
+    width: 180,
+    height: 100,
     marginBottom: 40,
   },
   input: {
-    height: 40,
-    borderColor: '#ccc',
+    height: 50,
+    width: '100%',
+    borderColor: '#ddd',
     borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    marginBottom: 15,
+    fontSize: 16,
+    backgroundColor: '#fff',
+  },
+  loginButton: {
+    width: '100%',
+    height: 50,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
+    marginBottom: 15,
+  },
+  createButton: {
+    width: '100%',
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
     marginBottom: 10,
-    paddingLeft: 8,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
+
+
+//<TouchableOpacity style={[styles.createButton, { backgroundColor: '#FF6347' }]} onPress={() => handleCreateAccount('administrador')}><Text style={styles.buttonText}>Crear Cuenta como Administrador</Text> </TouchableOpacity>

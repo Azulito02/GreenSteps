@@ -89,7 +89,7 @@ const HomeScreen = ({ navigation }) => {
           style={styles.button} 
           onPress={() => navigation.navigate('LoginScreen')}
         >
-          <Text style={styles.buttonText}>Continuar a Iniciar Sesión</Text>
+          <Text style={styles.buttonText}>Continuar</Text>
         </TouchableOpacity>
       </View>
     </View>
