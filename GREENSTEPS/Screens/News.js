@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { getApp } from 'firebase/app';
-import { StyleSheet, View, Text, Image, TouchableOpacity, TextInput, FlatList, Linking, Button, ActivityIndicator, Alert } from 'react-native';
+import { StyleSheet, View, Text, Image, TouchableOpacity, TextInput, FlatList, Linking, ActivityIndicator, Alert } from 'react-native';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
-import { getFirestore, collection, getDocs, addDoc } from 'firebase/firestore';
-import Icon from 'react-native-vector-icons/Ionicons'; // Asegúrate de tener esta librería instalada
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const app = getApp();
 const firestore = getFirestore(app);
@@ -17,25 +17,28 @@ const NoticiasContent = () => {
   const [foto, setFoto] = useState(null);
   const [url, setUrl] = useState('');
   const [isFormVisible, setIsFormVisible] = useState(false);
+  const [currentNoticiaId, setCurrentNoticiaId] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
-    const fetchNoticias = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(firestore, 'articulos'));
-        const noticiasArray = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setNoticias(noticiasArray);
-      } catch (error) {
-        console.error('Error al obtener las noticias: ', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchNoticias();
   }, []);
+
+  const fetchNoticias = async () => {
+    setLoading(true);
+    try {
+      const querySnapshot = await getDocs(collection(firestore, 'articulos'));
+      const noticiasArray = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setNoticias(noticiasArray);
+    } catch (error) {
+      console.error('Error al obtener las noticias: ', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const agregarNoticia = async () => {
     if (titulo && foto && url) {
@@ -54,17 +57,8 @@ const NoticiasContent = () => {
         });
 
         Alert.alert('Noticia agregada', 'La noticia se ha agregado correctamente.');
-        setTitulo('');
-        setFoto(null);
-        setUrl('');
-        setIsFormVisible(false);
-
-        const querySnapshot = await getDocs(collection(firestore, 'articulos'));
-        const noticiasArray = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setNoticias(noticiasArray);
+        resetForm();
+        fetchNoticias();
       } catch (error) {
         console.error('Error al agregar la noticia:', error);
         Alert.alert('Error', 'No se pudo agregar la noticia. Intenta nuevamente.');
@@ -72,6 +66,54 @@ const NoticiasContent = () => {
     } else {
       Alert.alert('Campos incompletos', 'Por favor, completa todos los campos.');
     }
+  };
+
+  const eliminarNoticia = async (id) => {
+    try {
+      await deleteDoc(doc(firestore, 'articulos', id));
+      Alert.alert('Noticia eliminada', 'La noticia se ha eliminado correctamente.');
+      fetchNoticias();
+    } catch (error) {
+      console.error('Error al eliminar la noticia:', error);
+      Alert.alert('Error', 'No se pudo eliminar la noticia. Intenta nuevamente.');
+    }
+  };
+
+  const actualizarNoticia = async () => {
+    if (titulo && foto && url) {
+      try {
+        const response = await fetch(foto);
+        const blob = await response.blob();
+        const imageRef = ref(storage, `images/${new Date().toISOString()}.jpg`);
+        await uploadBytes(imageRef, blob);
+        const photoURL = await getDownloadURL(imageRef);
+
+        await updateDoc(doc(firestore, 'articulos', currentNoticiaId), {
+          titulo,
+          foto: photoURL,
+          url,
+          fecha: new Date(),
+        });
+
+        Alert.alert('Noticia actualizada', 'La noticia se ha actualizado correctamente.');
+        resetForm();
+        fetchNoticias();
+      } catch (error) {
+        console.error('Error al actualizar la noticia:', error);
+        Alert.alert('Error', 'No se pudo actualizar la noticia. Intenta nuevamente.');
+      }
+    } else {
+      Alert.alert('Campos incompletos', 'Por favor, completa todos los campos.');
+    }
+  };
+
+  const resetForm = () => {
+    setTitulo('');
+    setFoto(null);
+    setUrl('');
+    setIsFormVisible(false);
+    setCurrentNoticiaId(null);
+    setIsUpdating(false);
   };
 
   const seleccionarImagen = async () => {
@@ -92,13 +134,57 @@ const NoticiasContent = () => {
       Linking.openURL(noticia.url).catch(err => console.error("Error al abrir URL:", err));
     };
 
+    const handleUpdatePress = () => {
+      setIsUpdating(true);
+      setCurrentNoticiaId(noticia.id);
+      setTitulo(noticia.titulo);
+      setFoto(noticia.foto);
+      setUrl(noticia.url);
+    };
+
     return (
-      <TouchableOpacity onPress={handlePress} style={styles.card}>
-        <Image source={{ uri: noticia.foto }} style={styles.cardImage} />
-        <View style={styles.cardContent}>
+      <View style={styles.card}>
+        <TouchableOpacity onPress={handlePress}>
+          <Image source={{ uri: noticia.foto }} style={styles.cardImage} />
           <Text style={styles.cardTitle}>{noticia.titulo}</Text>
+        </TouchableOpacity>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.button} onPress={() => eliminarNoticia(noticia.id)}>
+            <Icon name="trash" size={20} color="#fff" />
+            <Text style={styles.buttonText}>Eliminar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={handleUpdatePress}>
+            <Icon name="pencil" size={20} color="#fff" />
+            <Text style={styles.buttonText}>Actualizar</Text>
+          </TouchableOpacity>
         </View>
-      </TouchableOpacity>
+
+        {isUpdating && currentNoticiaId === noticia.id && (
+          <View style={styles.formContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Título de la noticia"
+              value={titulo}
+              onChangeText={setTitulo}
+            />
+            <TouchableOpacity style={styles.selectImageButton} onPress={seleccionarImagen}>
+              <Icon name="image-outline" size={20} color="#fff" />
+              <Text style={styles.buttonText}>Seleccionar Imagen</Text>
+            </TouchableOpacity>
+            {foto && <Image source={{ uri: foto }} style={styles.selectedImage} />}
+            <TextInput
+              style={styles.input}
+              placeholder="URL de la noticia"
+              value={url}
+              onChangeText={setUrl}
+            />
+            <TouchableOpacity style={styles.button} onPress={actualizarNoticia}>
+              <Icon name="checkmark-circle-outline" size={20} color="#fff" />
+              <Text style={styles.buttonText}>Actualizar Noticia</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     );
   };
 
@@ -118,7 +204,10 @@ const NoticiasContent = () => {
             value={titulo}
             onChangeText={setTitulo}
           />
-          <Button title="Seleccionar Imagen" onPress={seleccionarImagen} />
+          <TouchableOpacity style={styles.selectImageButton} onPress={seleccionarImagen}>
+            <Icon name="image-outline" size={20} color="#fff" />
+            <Text style={styles.buttonText}>Seleccionar Imagen</Text>
+          </TouchableOpacity>
           {foto && <Image source={{ uri: foto }} style={styles.selectedImage} />}
           <TextInput
             style={styles.input}
@@ -126,7 +215,10 @@ const NoticiasContent = () => {
             value={url}
             onChangeText={setUrl}
           />
-          <Button title="Agregar Noticia" onPress={agregarNoticia} />
+          <TouchableOpacity style={styles.button} onPress={agregarNoticia}>
+            <Icon name="add-circle-outline" size={20} color="#fff" />
+            <Text style={styles.buttonText}>Agregar Noticia</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -136,7 +228,6 @@ const NoticiasContent = () => {
         keyExtractor={(item) => item.id}
       />
 
-      {/* Botón flotante para mostrar/ocultar el formulario */}
       <TouchableOpacity
         style={styles.floatingButton}
         onPress={() => setIsFormVisible(!isFormVisible)}
@@ -194,6 +285,39 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
     borderRadius: 8,
   },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginVertical: 10,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007bff',
+    borderRadius: 5,
+    padding: 10,
+    flex: 1,
+    justifyContent: 'center',
+    marginHorizontal: 5,
+  },
+  buttonText: {
+    color: '#fff',
+    marginLeft: 5,
+  },
+  selectImageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#28a745',
+    borderRadius: 5,
+    padding: 10,
+    justifyContent: 'center',
+    marginTop: 5,
+  },
   selectedImage: {
     width: '100%',
     height: 200,
@@ -203,10 +327,11 @@ const styles = StyleSheet.create({
   floatingButton: {
     position: 'absolute',
     bottom: 50,
-    right: 1,
+    right: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  
 });
 
 export default NoticiasContent;
