@@ -113,7 +113,7 @@ const EditModal = ({ visible, onClose, reporte, onSave }) => {
               style={[styles.estadoButton, editEstado === 'Saludable' && styles.estadoButtonSelected]}
               onPress={() => setEditEstado('Saludable')}
             >
-              <Text style={styles.estadoButtonText}>Saludable</Text>
+              <Text style={styles.estadoButtonText}>Estable</Text>
             </TouchableOpacity>
           </View>
 

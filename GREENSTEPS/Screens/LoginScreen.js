@@ -76,7 +76,7 @@ export default function LoginScreen({ navigation }) {
 
   const handleCreateAccount = async (role) => {
     if (!email || !password) {
-      Alert.alert('Error', 'Todos los campos son obligatorios.');
+      Alert.alert('Error', 'Todos los campos son awebo.');
       return;
     }
 
