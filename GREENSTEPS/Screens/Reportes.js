@@ -218,6 +218,11 @@ const ReportContent = () => {
   };
 
   const handleSubmit = async () => {
+      // Verificar si los campos requeridos están completos
+  if (!titulo.trim() || !descripcion.trim() || !estado.trim() || !comentario.trim()) {
+    alert('Por favor, completa todos los campos obligatorios.');
+    return;
+  }
     try {
       setIsLoading(true);
       let fotoURL = '';
