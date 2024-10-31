@@ -98,7 +98,7 @@ const MapContent = ({ route, navigation }) => {
           onPress: () => addNewPin(latitude, longitude, 'yellow'),
         },
         {
-          text: 'Verde (no serio)',
+          text: 'Verde (Estable)',
           onPress: () => addNewPin(latitude, longitude, 'green'),
         },
         {
@@ -158,7 +158,7 @@ const MapContent = ({ route, navigation }) => {
           onPress: () => changePinColor(index, 'yellow'),
         },
         {
-          text: 'Verde (no serio)',
+          text: 'Verde (Estable)',
           onPress: () => changePinColor(index, 'green'),
         },
         {

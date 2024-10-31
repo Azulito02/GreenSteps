@@ -37,7 +37,7 @@ export default function ImagePickerComponent() {
       try {
         const base64 = await getBase64(imageUri);
         
-        const apiKey = 'AIzaSyCmaQTu8gDQAPjW9fRxjrqWEUHtSYZyjfc';  // Reemplaza con tu clave API real
+        const apiKey = 'AIzaSyCmaQTu8gDQAPjW9fRxjrqWEUHtSYZyjfc';  
     
         const response = await axios.post(
           `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
