@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Alert, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, Alert, View, TouchableOpacity, Modal, Text } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { collection, getDocs, addDoc, updateDoc, doc, getFirestore } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getFirestore } from 'firebase/firestore';
 import { getApp } from 'firebase/app';
 
 const app = getApp();
 const firestore = getFirestore(app);
 
 const MapContent = ({ route, navigation }) => {
-  const initialLatitude = route?.params?.latitude || 12.8654; // Coordenada predeterminada
-  const initialLongitude = route?.params?.longitude || -85.2072; // Coordenada predeterminada
+  const initialLatitude = route?.params?.latitude || 12.8654;
+  const initialLongitude = route?.params?.longitude || -85.2072;
 
   const mapRef = useRef(null);
   const [markers, setMarkers] = useState([
@@ -20,14 +20,15 @@ const MapContent = ({ route, navigation }) => {
       longitude: initialLongitude,
       title: 'Ubicación inicial',
       description: 'Este es el lugar preciso al que se hace referencia',
-      severity: 'blue', // Pin azul de referencia
+      severity: 'blue',
     },
   ]);
   const [location, setLocation] = useState(null);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const [loadingMarkers, setLoadingMarkers] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedPinIndex, setSelectedPinIndex] = useState(null);
 
-  // Pedir permisos de ubicación
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -39,7 +40,6 @@ const MapContent = ({ route, navigation }) => {
     })();
   }, []);
 
-  // Cargar los pines desde Firestore
   useEffect(() => {
     const fetchMarkers = async () => {
       try {
@@ -49,7 +49,7 @@ const MapContent = ({ route, navigation }) => {
           loadedMarkers.push({ id: doc.id, ...doc.data() });
         });
         setMarkers((currentMarkers) => [...currentMarkers, ...loadedMarkers]);
-        setLoadingMarkers(false); // Marcar que los pines han sido cargados
+        setLoadingMarkers(false);
       } catch (error) {
         console.error('Error al cargar los marcadores:', error);
       }
@@ -58,7 +58,6 @@ const MapContent = ({ route, navigation }) => {
     fetchMarkers();
   }, []);
 
-  // Función para centrar el mapa en la ubicación actual del usuario
   const centerOnUserLocation = async () => {
     if (!hasLocationPermission) {
       Alert.alert('Permiso de ubicación no otorgado');
@@ -81,7 +80,6 @@ const MapContent = ({ route, navigation }) => {
     });
   };
 
-  // Función para agregar un nuevo pin al mapa y guardarlo en Firestore
   const handleMapPress = (event) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
 
@@ -109,7 +107,6 @@ const MapContent = ({ route, navigation }) => {
     );
   };
 
-  // Añadir un nuevo pin a Firestore
   const addNewPin = async (latitude, longitude, severity) => {
     const newMarker = {
       latitude,
@@ -117,10 +114,8 @@ const MapContent = ({ route, navigation }) => {
       severity,
     };
 
-    // Actualiza el estado local
     setMarkers((currentMarkers) => [...currentMarkers, newMarker]);
 
-    // Guarda el nuevo pin en Firestore
     try {
       await addDoc(collection(firestore, 'Marcadores'), newMarker);
       console.log('Pin guardado exitosamente en Firestore');
@@ -129,7 +124,6 @@ const MapContent = ({ route, navigation }) => {
     }
   };
 
-  // Obtener el color del pin basado en la severidad
   const getPinColor = (severity) => {
     switch (severity) {
       case 'red':
@@ -143,51 +137,53 @@ const MapContent = ({ route, navigation }) => {
     }
   };
 
-  // Cambiar el color de un pin al hacer clic
   const handleMarkerPress = (index) => {
-    Alert.alert(
-      'Cambiar color del pin',
-      'Selecciona un color para la gravedad:',
-      [
-        {
-          text: 'Rojo (grave)',
-          onPress: () => changePinColor(index, 'red'),
-        },
-        {
-          text: 'Amarillo (leve)',
-          onPress: () => changePinColor(index, 'yellow'),
-        },
-        {
-          text: 'Verde (Estable)',
-          onPress: () => changePinColor(index, 'green'),
-        },
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-        },
-      ]
-    );
+    setSelectedPinIndex(index);
+    setShowModal(true);
   };
 
-  // Cambiar la severidad de un pin y actualizar Firestore
   const changePinColor = async (index, newSeverity) => {
     const markerToUpdate = markers[index];
+    if (!markerToUpdate.id) {
+      console.error('Error: El pin no tiene un ID válido.');
+      return;
+    }
 
-    // Actualiza el estado local
     setMarkers((currentMarkers) =>
       currentMarkers.map((marker, markerIndex) =>
         markerIndex === index ? { ...marker, severity: newSeverity } : marker
       )
     );
 
-    // Actualiza el pin en Firestore
     try {
-      const markerDoc = doc(firestore, 'Marcadores', markerToUpdate.id); // Usa el ID del documento
+      const markerDoc = doc(firestore, 'Marcadores', markerToUpdate.id);
       await updateDoc(markerDoc, { severity: newSeverity });
       console.log('Pin actualizado exitosamente en Firestore');
     } catch (error) {
       console.error('Error al actualizar el pin:', error);
     }
+    setShowModal(false);
+  };
+
+  const deletePin = async (index) => {
+    const markerToDelete = markers[index];
+    if (!markerToDelete.id) {
+      console.error('Error: El pin no tiene un ID válido.');
+      return;
+    }
+
+    try {
+      const markerDoc = doc(firestore, 'Marcadores', markerToDelete.id);
+      await deleteDoc(markerDoc);
+      console.log('Pin eliminado exitosamente de Firestore');
+
+      setMarkers((currentMarkers) =>
+        currentMarkers.filter((_, markerIndex) => markerIndex !== index)
+      );
+    } catch (error) {
+      console.error('Error al eliminar el pin:', error);
+    }
+    setShowModal(false);
   };
 
   return (
@@ -218,10 +214,32 @@ const MapContent = ({ route, navigation }) => {
         ))}
       </MapView>
 
-      {/* Botón para centrar en la ubicación actual */}
       <TouchableOpacity style={styles.locationButton} onPress={centerOnUserLocation}>
         <MaterialIcons name="my-location" size={24} color="white" />
       </TouchableOpacity>
+
+      <Modal visible={showModal} transparent animationType="slide">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Opciones del Pin</Text>
+            <TouchableOpacity onPress={() => changePinColor(selectedPinIndex, 'red')}>
+              <Text style={styles.modalOption}>Cambiar a rojo (grave)</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => changePinColor(selectedPinIndex, 'yellow')}>
+              <Text style={styles.modalOption}>Cambiar a amarillo (leve)</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => changePinColor(selectedPinIndex, 'green')}>
+              <Text style={styles.modalOption}>Cambiar a verde (Estable)</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => deletePin(selectedPinIndex)}>
+              <Text style={[styles.modalOption, { color: 'red' }]}>Eliminar pin</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowModal(false)}>
+              <Text style={styles.modalOption}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -247,6 +265,29 @@ const styles = StyleSheet.create({
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  modalOption: {
+    fontSize: 16,
+    color: 'blue',
+    paddingVertical: 10,
   },
 });
 
