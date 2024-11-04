@@ -9,10 +9,14 @@ import Icon from 'react-native-vector-icons/Ionicons'; // Agregar esta línea
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
 import { Video } from 'expo-av';
+import { getAuth } from 'firebase/auth';
+import { useAuthState } from 'react-firebase-hooks/auth';
 
 const app = getApp();
 const firestore = getFirestore(app);
 const storage = getStorage(app);
+
+
 
 const EditModal = ({ visible, onClose, reporte, onSave }) => {
   const [editTitulo, setEditTitulo] = useState(reporte?.titulo || '');
@@ -35,8 +39,8 @@ const EditModal = ({ visible, onClose, reporte, onSave }) => {
     try {
       let result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsMultipleSelection: false,
-        quality: 1,
+        allowsEditing: true,
+       quality: 0.5,
       });
 
       if (!result.canceled) {
@@ -78,6 +82,8 @@ const EditModal = ({ visible, onClose, reporte, onSave }) => {
       onSave(updatedReporte);
       onClose();
     } catch (error) {
+      console.error('Error en uploadNewPhoto:', error);
+  Alert.alert('Error', 'Error al subir la foto actualizada');
       Alert.alert('Error', `Error al guardar cambios: ${error.message}`);
     } finally {
       setIsLoading(false);
@@ -151,6 +157,18 @@ const ReportContent = () => {
   const [isViewingReportes, setIsViewingReportes] = useState(true);
   const [location, setLocation] = useState(null);
   const navigation = useNavigation();
+  const auth = getAuth(); // Autenticación de Firebase
+  const [user, loading] = useAuthState(auth);
+
+  const handleUploadData = () => {
+    if (user) {
+      const userId = user.uid;
+      // Aquí realiza la lógica para subir los datos usando el userId
+    } else {
+      console.log("El usuario no está autenticado");
+    }
+  };
+
 
   const openMap = (latitude, longitude) => {
     navigation.navigate('Mapa', { latitude, longitude });
@@ -217,53 +235,7 @@ const ReportContent = () => {
     }
   };
 
-  const handleSubmit = async () => {
-      // Verificar si los campos requeridos están completos
-  if (!titulo.trim() || !descripcion.trim() || !estado.trim() || !comentario.trim()) {
-    alert('Por favor, completa todos los campos obligatorios.');
-    return;
-  }
-    try {
-      setIsLoading(true);
-      let fotoURL = '';
-      let videoURL = '';
   
-      for (const item of media) {
-        if (item.type === 'image') {
-          fotoURL = await uploadMedia(item.uri, 'image');
-        } else if (item.type === 'video') {
-          videoURL = await uploadMedia(item.uri, 'video');
-        }
-      }
-  
-      await addDoc(collection(firestore, 'reportes'), {
-        descripcion,
-        titulo,
-        estado,
-        fecha_reportes: Timestamp.now(),
-        foto: fotoURL,
-        video: videoURL,
-        comentario,
-        coordenadas: {
-          latitud: location?.latitude || 0,
-          longitud: location?.longitude || 0,
-        },
-      });
-  
-      alert('Reporte enviado exitosamente.');
-      setDescripcion('');
-      setTitulo('');
-      setComentario('');
-      setMedia([]);
-      fetchReportes();
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Error al subir datos: ", error);
-      alert(`Error al subir datos: ${error.message}`);
-      setIsLoading(false);
-    }
-  };
-
   const renderItem = ({ item }) => {
     if (item.type === 'image') {
       return <Image source={{ uri: item.uri }} style={styles.mediaItem} />;
@@ -310,51 +282,106 @@ const ReportContent = () => {
   };
 
 
-  const renderReporte = ({ item }) => (
-    <View style={styles.reporteItem}>
-      <Text style={styles.reporteTitle}>{item.titulo}</Text>
-      <Text style={styles.reporteText}>{item.descripcion}</Text>
-      {item.foto && <Image source={{ uri: item.foto }} style={styles.reporteImage} />}
-      {item.video && (
-    <Video
-      source={{ uri: item.video }}
-      style={styles.reporteImage}
-      useNativeControls
-      resizeMode="contain"
-      isLooping
-    />
-      )}
-      <Text style={styles.reporteEstado}>Estado: {item.estado}</Text>
-      <Text style={styles.reporteComentario}>Comentario: {item.comentario}</Text>
-      <Text style={[styles.reporteText, { color: 'blue' }]} onPress={() => openMap(item.coordenadas.latitud, item.coordenadas.longitud)}>
-        Ver en el mapa
-      </Text>
-      <Text style={styles.reporteDate}>Fecha: {item.fecha_reportes.toDate().toString()}</Text>
+
+
+const handleSubmit = async () => {
+  if (!titulo.trim() || !descripcion.trim() || !estado.trim() || !comentario.trim()) {
+    alert('Por favor, completa todos los campos obligatorios.');
+    return;
+  }
+  try {
+    setIsLoading(true);
+    let fotoURL = '';
+    let videoURL = '';
+
+    for (const item of media) {
+      if (item.type === 'image') {
+        fotoURL = await uploadMedia(item.uri, 'image');
+      } else if (item.type === 'video') {
+        videoURL = await uploadMedia(item.uri, 'video');
+      }
+    }
+
+    await addDoc(collection(firestore, 'reportes'), {
+      descripcion,
+      titulo,
+      estado,
+      fecha_reportes: Timestamp.now(),
+      foto: fotoURL,
+      video: videoURL,
+      comentario,
+      userId: user.uid,  // Añade el ID del usuario actual al reporte
+      coordenadas: {
+        latitud: location?.latitude || 0,
+        longitud: location?.longitude || 0,
+      },
+    });
+
+    alert('Reporte enviado exitosamente.');
+    setDescripcion('');
+    setTitulo('');
+    setComentario('');
+    setMedia([]);
+    fetchReportes();
+    setIsLoading(false);
+  } catch (error) {
+    console.error("Error al subir datos: ", error);
+    alert(`Error al subir datos: ${error.message}`);
+    setIsLoading(false);
+  }
+};
+
+const renderReporte = ({ item }) => (
+  <View style={styles.reporteItem}>
+    <Text style={styles.reporteTitle}>{item.titulo}</Text>
+    <Text style={styles.reporteText}>{item.descripcion}</Text>
+    {item.foto && <Image source={{ uri: item.foto }} style={styles.reporteImage} />}
+    {item.video && (
+      <Video
+        source={{ uri: item.video }}
+        style={styles.reporteImage}
+        useNativeControls
+        resizeMode="contain"
+        isLooping
+      />
+    )}
+    <Text style={styles.reporteEstado}>Estado: {item.estado}</Text>
+    <Text style={styles.reporteComentario}>Comentario: {item.comentario}</Text>
+    <Text style={[styles.reporteText, { color: 'blue' }]} onPress={() => openMap(item.coordenadas.latitud, item.coordenadas.longitud)}>
+      Ver en el mapa
+    </Text>
+    <Text style={styles.reporteDate}>Fecha: {item.fecha_reportes.toDate().toString()}</Text>
+    
+    {/* Condición para mostrar los botones solo si el usuario es el creador */}
+    {user && item.userId === user.uid && (
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.updateButton} onPress={() => {
-          setSelectedReporte(item);
-          setIsEditModalVisible(true);
-        }}>
+        <TouchableOpacity style={styles.updateButton} onPress={() => handleUpdateButtonPress(item)}>
           <FontAwesomeIcon name="pencil" size={20} color="white" style={styles.icon} />
           <Text style={styles.buttonText}>Actualizar</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.deleteButton} onPress={() => {
-          Alert.alert('Eliminar Reporte', '¿Estás seguro de que deseas eliminar este reporte?', [
-            { text: 'Cancelar', style: 'cancel' },
-            { text: 'Eliminar', onPress: () => handleDeleteReporte(item.id) },
-          ]);
-        }}>
+        <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteReporte(item.id)}>
           <FontAwesomeIcon name="trash" size={20} color="white" style={styles.icon} />
           <Text style={styles.buttonText}>Eliminar</Text>
         </TouchableOpacity>
       </View>
-    </View>
-  );
-
+    )}
+  </View>
+);
  
 
 return (
+  
   <View style={styles.container}>
+    {user ? (
+        <>
+        
+      </>
+    ) : (
+      <>
+        <Text>No estás autenticado. Inicia sesión para continuar.</Text>
+        <Button title="Ir a inicio de sesión" onPress={() => navigation.navigate('LoginScreen')} />
+      </>
+    )}
     {isViewingReportes ? (
       <View>
         <FlatList

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, Image } from 'react-native';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { collection, setDoc, doc, getDoc } from 'firebase/firestore';
-import { CommonActions } from '@react-navigation/native';
 import { app, db } from '../bd/firebaseconfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -21,12 +20,7 @@ export default function LoginScreen({ navigation }) {
       const userLoggedIn = await AsyncStorage.getItem('userLoggedIn');
       const userRole = await AsyncStorage.getItem('rol');
       if (userLoggedIn && userRole) {
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'GreenSteps', params: { role: userRole } }],
-          })
-        );
+        navigation.navigate('GreenSteps', { role: userRole });
       }
     } catch (error) {
       console.error('Error al verificar el estado de login: ', error);
@@ -58,13 +52,7 @@ export default function LoginScreen({ navigation }) {
         const role = userDoc.data().rol;
         await AsyncStorage.setItem('userLoggedIn', 'true');
         await AsyncStorage.setItem('rol', role);
-        
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'GreenSteps', params: { role } }],
-          })
-        );
+        navigation.navigate('GreenSteps', { role });
       } else {
         Alert.alert('Error', 'No se encontró el rol del usuario.');
       }
@@ -76,7 +64,7 @@ export default function LoginScreen({ navigation }) {
 
   const handleCreateAccount = async (role) => {
     if (!email || !password) {
-      Alert.alert('Error', 'Todos los campos son awebo.');
+      Alert.alert('Error', 'Todos los campos son obligatorios.');
       return;
     }
 
@@ -96,13 +84,7 @@ export default function LoginScreen({ navigation }) {
 
       await AsyncStorage.setItem('userLoggedIn', 'true');
       await AsyncStorage.setItem('rol', role);
-      
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: 'GreenSteps', params: { role } }],
-        })
-      );
+      navigation.navigate('GreenSteps', { role });
     } catch (error) {
       console.error('Error al crear cuenta: ', error);
       Alert.alert('Error cuenta ya existente');
@@ -137,9 +119,12 @@ export default function LoginScreen({ navigation }) {
       </TouchableOpacity>
 
       <TouchableOpacity style={[styles.createButton, { backgroundColor: '#4CAF50' }]} onPress={() => handleCreateAccount('usuario')}>
-        <Text style={styles.buttonText}>Crear Cuenta </Text>
+        <Text style={styles.buttonText}>Crear Cuenta como Usuario</Text>
       </TouchableOpacity>
 
+      <TouchableOpacity style={[styles.createButton, { backgroundColor: '#FF6347' }]} onPress={() => handleCreateAccount('administrador')}>
+        <Text style={styles.buttonText}>Crear Cuenta como Administrador</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -191,6 +176,3 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
-
-
-//<TouchableOpacity style={[styles.createButton, { backgroundColor: '#FF6347' }]} onPress={() => handleCreateAccount('administrador')}><Text style={styles.buttonText}>Crear Cuenta como Administrador</Text> </TouchableOpacity>
