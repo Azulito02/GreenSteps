@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Button, Modal, FlatList, Alert, ActivityIndicator, Image } from 'react-native';
-import { getFirestore, collection, getDocs, doc,addDoc,Timestamp, updateDoc, deleteDoc } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, getDoc, doc,addDoc,Timestamp, updateDoc, deleteDoc } from 'firebase/firestore';
 import { getApp } from 'firebase/app';
 import * as ImagePicker from 'expo-image-picker';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -159,17 +159,34 @@ const ReportContent = () => {
   const navigation = useNavigation();
   const auth = getAuth(); // Autenticación de Firebase
   const [user, loading] = useAuthState(auth);
+  const [isAdmin, setIsAdmin] = useState(false); 
 
-  const handleUploadData = () => {
+ 
+  useEffect(() => {
     if (user) {
-      const userId = user.uid;
-      // Aquí realiza la lógica para subir los datos usando el userId
-    } else {
-      console.log("El usuario no está autenticado");
+      console.log("User ID:", user.uid); // Asegúrate de que este log imprima el ID correcto
+      checkIfAdmin(user.uid); // Llama a la función para verificar si es admin
+    }
+  }, [user]);
+
+  const checkIfAdmin = async (userId) => {
+    try {
+      const userRef = doc(firestore, 'usuarios', userId); // Crea una referencia al documento de usuario
+      const userDoc = await getDoc(userRef); // Usa getDoc para obtener un único documento
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        console.log("User Data:", userData); // Imprime los datos del usuario
+        setIsAdmin(userData.rol === 'administrador'); // Cambia 'admin' por 'administrador' si ese es el valor correcto
+        console.log("isAdmin:", userData.rol === 'administrador'); // Imprime true si el rol es 'administrador'
+      } else {
+        console.warn("Documento de usuario no encontrado");
+      }
+    } catch (error) {
+      console.error("Error al verificar el rol del usuario: ", error);
     }
   };
-
-
+  
   const openMap = (latitude, longitude) => {
     navigation.navigate('Mapa', { latitude, longitude });
   };
@@ -347,11 +364,14 @@ const renderReporte = ({ item }) => (
     )}
     <Text style={styles.reporteEstado}>Estado: {item.estado}</Text>
     <Text style={styles.reporteComentario}>Comentario: {item.comentario}</Text>
-    <Text style={[styles.reporteText, { color: 'blue' }]} onPress={() => openMap(item.coordenadas.latitud, item.coordenadas.longitud)}>
+    <Text
+      style={[styles.reporteText, { color: 'blue' }]}
+      onPress={() => openMap(item.coordenadas.latitud, item.coordenadas.longitud)}
+    >
       Ver en el mapa
     </Text>
     <Text style={styles.reporteDate}>Fecha: {item.fecha_reportes.toDate().toString()}</Text>
-    
+
     {/* Condición para mostrar los botones solo si el usuario es el creador */}
     {user && item.userId === user.uid && (
       <View style={styles.buttonContainer}>
@@ -365,8 +385,23 @@ const renderReporte = ({ item }) => (
         </TouchableOpacity>
       </View>
     )}
+
+    {/* Mostrar los botones solo si el usuario es administrador */}
+    {isAdmin && (
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={styles.updateButton} onPress={() => handleUpdateButtonPress(item)}>
+          <FontAwesomeIcon name="pencil" size={20} color="white" style={styles.icon} />
+          <Text style={styles.buttonText}>Actualizar</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteReporte(item.id)}>
+          <FontAwesomeIcon name="trash" size={20} color="white" style={styles.icon} />
+          <Text style={styles.buttonText}>Eliminar</Text>
+        </TouchableOpacity>
+      </View>
+    )}
   </View>
 );
+
  
 
 return (
