@@ -14,52 +14,59 @@ const EstadisticasScreen = () => {
   const [reportesPorUsuario, setReportesPorUsuario] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const usuariosChartRef = useRef(); // Referencia al primer gráfico
-  const reportesChartRef = useRef(); // Referencia al segundo gráfico
-
+  const usuariosChartRef = useRef(); 
+  const reportesChartRef = useRef(); 
   useEffect(() => {
     const fetchData = async () => {
       try {
         // Obtener usuarios
         const usersSnapshot = await getDocs(collection(db, 'usuarios'));
-        const usuariosCount = usersSnapshot.size;
-
-        // Crear un diccionario de usuarios {usuarioId: nombre}
         const usuariosData = {};
+        let usuariosCount = 0;
+    
         usersSnapshot.forEach(doc => {
-          usuariosData[doc.id] = doc.data().nombre || 'Usuario Desconocido';
+          const nombre = doc.data().nombre || 'Usuario Desconocido';
+          usuariosData[doc.id] = nombre;
+          usuariosCount += 1; // Contamos cada usuario
         });
-
-        // Obtener artículos y reportes
-        const articulosSnapshot = await getDocs(collection(db, 'articulos'));
-        const articulosCount = articulosSnapshot.size;
-
+        console.log("Usuarios obtenidos:", usuariosData);
+    
+        // Obtener reportes y procesarlos
         const reportesSnapshot = await getDocs(collection(db, 'reportes'));
-        const reportesCount = reportesSnapshot.size;
-
-        // Procesar los reportes por usuario
         const reportesPorUsuarioData = {};
+        let reportesCount = 0;
+    
         reportesSnapshot.forEach(doc => {
           const reporte = doc.data();
-          const usuarioId = reporte.usuarioId;
-          if (reportesPorUsuarioData[usuarioId]) {
-            reportesPorUsuarioData[usuarioId]++;
+          const userId = reporte.userId;
+          reportesCount += 1; // Contamos cada reporte
+    
+          if (userId && usuariosData[userId]) {
+            reportesPorUsuarioData[userId] = (reportesPorUsuarioData[userId] || 0) + 1;
           } else {
-            reportesPorUsuarioData[usuarioId] = 1;
+            console.warn(`Usuario con ID ${userId} no encontrado en usuariosData o no tiene nombre.`);
           }
         });
-
-        // Convertir los datos en un arreglo para el gráfico
-        const reportesPorUsuarioArray = Object.keys(reportesPorUsuarioData).map(usuarioId => ({
-          usuario: usuariosData[usuarioId] || 'Usuario Desconocido', // Usar el nombre del usuario
-          cantidad: reportesPorUsuarioData[usuarioId],
-        }));
-
+    
+        // Obtener artículos (si la colección de artículos existe en Firestore)
+        const articulosSnapshot = await getDocs(collection(db, 'articulos'));
+        const articulosCount = articulosSnapshot.size; // Contamos los documentos de artículos
+    
+        // Actualizar el estado `data` con los conteos
         setData({
           usuarios: usuariosCount,
           articulos: articulosCount,
           reportes: reportesCount,
         });
+  
+        // Filtrar usuarios que tienen al menos un reporte
+        const reportesPorUsuarioArray = Object.keys(reportesPorUsuarioData)
+          .map(userId => ({
+            usuario: usuariosData[userId],
+            cantidad: reportesPorUsuarioData[userId],
+          }))
+          .filter(item => item.cantidad > 0); // Filtrar para incluir solo usuarios con reportes
+    
         setReportesPorUsuario(reportesPorUsuarioArray);
       } catch (error) {
         console.error('Error al obtener estadísticas:', error);
@@ -67,9 +74,11 @@ const EstadisticasScreen = () => {
         setIsLoading(false);
       }
     };
-
+  
     fetchData();
   }, []);
+  
+  
 
   const chartData = {
     labels: ['Usuarios', 'Artículos', 'Reportes'],
@@ -80,9 +89,8 @@ const EstadisticasScreen = () => {
     ],
   };
 
-  // Generar datos para el gráfico de reportes por usuario
   const reportesPorUsuarioData = {
-    labels: reportesPorUsuario.map(item => item.usuario), // Muestra los nombres de los usuarios
+    labels: reportesPorUsuario.map(item => item.usuario), 
     datasets: [
       {
         data: reportesPorUsuario.map(item => item.cantidad),
@@ -90,9 +98,10 @@ const EstadisticasScreen = () => {
     ],
   };
 
+  const colors = ['#FF6384', '#36A2EB', '#FFCE56']; // Colores para cada barra
+
   const generatePDF = async (chartRef, title, data) => {
     try {
-      // Capturar el gráfico como imagen
       const uri = await captureRef(chartRef, {
         format: "png",
         quality: 1,
@@ -100,33 +109,25 @@ const EstadisticasScreen = () => {
         height: 220,
       });
 
-      // Crear una instancia de jsPDF
       const doc = new jsPDF();
-
-      // Agregar título al PDF
       doc.text(title, 10, 10);
 
-      // Leer la imagen capturada y agregarla al PDF
       const chartImage = await FileSystem.readAsStringAsync(uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
       doc.addImage(`data:image/png;base64,${chartImage}`, "PNG", 10, 20, 180, 100);
 
-      // Agregar los datos al PDF en formato de texto
       data.forEach((item, index) => {
         doc.text(`${item.label}: ${item.value}`, 10, 130 + index * 10);
       });
 
-      // Generar el PDF como base64
       const pdfBase64 = doc.output('datauristring').split(',')[1];
       const fileUri = `${FileSystem.documentDirectory}${title.replace(/\s+/g, '_').toLowerCase()}.pdf`;
 
-      // Guardar el archivo PDF
       await FileSystem.writeAsStringAsync(fileUri, pdfBase64, {
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      // Compartir el archivo PDF
       await Sharing.shareAsync(fileUri);
     } catch (error) {
       console.error("Error al generar o compartir el PDF: ", error);
@@ -141,7 +142,6 @@ const EstadisticasScreen = () => {
         <ActivityIndicator size="large" color="#0000ff" />
       ) : (
         <>
-          {/* Gráfico de Estadísticas Generales */}
           <View ref={usuariosChartRef} collapsable={false}>
             <BarChart
               data={chartData}
@@ -153,24 +153,19 @@ const EstadisticasScreen = () => {
                 backgroundGradientFrom: '#eff3ff',
                 backgroundGradientTo: '#efefef',
                 decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(0, 0, 255, ${opacity})`,
-                style: {
-                  borderRadius: 16,
-                },
+                color: (opacity = 1) => `rgba(0, 123, 255, ${opacity})`,
               }}
               style={{
-                marginVertical: 8,
-                borderRadius: 16,
+                borderRadius: 10,
               }}
             />
           </View>
-          <Button title="Generar PDF de Estadísticas Generales" onPress={() => generatePDF(usuariosChartRef, 'Estadísticas Generales', [
+          <Button title="Generar PDF" onPress={() => generatePDF(usuariosChartRef, 'Estadísticas Generales', [
             { label: 'Usuarios', value: data.usuarios },
             { label: 'Artículos', value: data.articulos },
             { label: 'Reportes', value: data.reportes },
           ])} />
 
-          {/* Gráfico de Reportes por Usuario */}
           <Text style={styles.subtitle}>Reportes por Usuario</Text>
           <View ref={reportesChartRef} collapsable={false}>
             <BarChart
@@ -179,22 +174,18 @@ const EstadisticasScreen = () => {
               height={220}
               yAxisLabel=""
               chartConfig={{
-                backgroundColor: '#1cc910',
+                backgroundColor: 'purple',
                 backgroundGradientFrom: '#eff3ff',
                 backgroundGradientTo: '#efefef',
                 decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(0, 0, 255, ${opacity})`,
-                style: {
-                  borderRadius: 16,
-                },
+                color: (opacity = 1) => `rgba(0, 123, 255, ${opacity})`,
               }}
               style={{
-                marginVertical: 8,
-                borderRadius: 16,
+                borderRadius: 10,
               }}
             />
           </View>
-          <Button title="Generar PDF de Reportes por Usuario" onPress={() => generatePDF(reportesChartRef, 'Reportes por Usuario', reportesPorUsuario.map(item => ({
+          <Button title="Generar PDF " onPress={() => generatePDF(reportesChartRef, 'Reportes por Usuario', reportesPorUsuario.map(item => ({
             label: item.usuario,
             value: item.cantidad,
           })))} />
