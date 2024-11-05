@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import ReportContent from './Reportes';
 import NoticiasContent from './News';
 import NoticiasContentUser from './Usuarios/NewsUser';
 import MapContent from './MapContent';
 import ImagePickerComponent from '../Componentes/ImagePickerComponent';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import AjustesScreen  from './AjustesScreen';
-
+import AjustesScreen from './AjustesScreen';
+import Icon from 'react-native-vector-icons/Ionicons'; // He cambiado a 'Ionicons' para una apariencia más moderna
 
 export default function GreenSteps() {
   const [activeComponent, setActiveComponent] = useState(null);
@@ -36,50 +36,43 @@ export default function GreenSteps() {
   const renderButtonsForadministrador = () => (
     <>
       <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ReportContent />)}>
-        <Text style={styles.navText}>Reportes</Text>
+        <Icon name="document-text-outline" size={26} color="#1E88E5" />
       </TouchableOpacity>
       <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<MapContent />)}>
-        <Text style={styles.navText}>Mapa</Text>
+        <Icon name="map-outline" size={26} color="#1E88E5" />
       </TouchableOpacity>
       <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<NoticiasContent />)}>
-        <Text style={styles.navText}>Noticias</Text>
+        <Icon name="newspaper-outline" size={26} color="#1E88E5" />
       </TouchableOpacity>
       <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ImagePickerComponent />)}>
-        <Text style={styles.navText}>Cámara</Text>
+        <Icon name="camera-outline" size={26} color="#1E88E5" />
       </TouchableOpacity>
       <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<AjustesScreen />)}>
-        <Text style={styles.navText}>Ajustes</Text>
+        <Icon name="settings-outline" size={26} color="#1E88E5" />
       </TouchableOpacity>
     </>
   );
 
   const renderButtonsForUser = () => (
     <>
-    <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ReportContent />)}>
-        <Text style={styles.navText}>Reportes</Text>
+      <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ReportContent />)}>
+        <Icon name="document-text-outline" size={26} color="#1E88E5" />
       </TouchableOpacity>
-
       <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<NoticiasContentUser />)}>
-        <Text style={styles.navText}>Noticias</Text>
+        <Icon name="newspaper-outline" size={26} color="#1E88E5" />
       </TouchableOpacity>
-
       <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ImagePickerComponent />)}>
-        <Text style={styles.navText}>Cámara</Text>
+        <Icon name="camera-outline" size={26} color="#1E88E5" />
       </TouchableOpacity>
-      
       <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<AjustesScreen />)}>
-        <Text style={styles.navText}>Ajustes</Text>
+        <Icon name="settings-outline" size={26} color="#1E88E5" />
       </TouchableOpacity>
     </>
-
-    
   );
 
   return (
     <View style={styles.container}>
-      <View style={styles.contentArea}>
-        {activeComponent}
-      </View>
+      <View style={styles.contentArea}>{activeComponent}</View>
 
       {/* Barra de navegación */}
       <View style={styles.navBar}>
@@ -115,9 +108,5 @@ const styles = StyleSheet.create({
   navButton: {
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  navText: {
-    color: '#000E5C',
-    fontSize: 12,
   },
 });
