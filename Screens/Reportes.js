@@ -197,17 +197,36 @@ const ReportContent = () => {
 
   const fetchReportes = async () => {
     try {
-      const querySnapshot = await getDocs(collection(firestore, 'reportes'));
-      const reportesArray = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const reportesSnapshot = await getDocs(collection(firestore, 'reportes'));
+      const reportesArray = await Promise.all(
+        reportesSnapshot.docs.map(async (reporteDoc) => {
+          const reporteData = reporteDoc.data();
+  
+          // Verificar que `userId` exista antes de intentar obtener el usuario
+          let nombre = 'Usuario desconocido';
+          if (reporteData.userId) {
+            const userRef = doc(firestore, 'usuarios', reporteData.userId);
+            const userDoc = await getDoc(userRef);
+            
+            // Obtener el nombre del usuario si el documento existe
+            if (userDoc.exists()) {
+              nombre = userDoc.data().nombre;
+            }
+          }
+  
+          // Retornar los datos del reporte junto con el nombre del usuario
+          return {
+            id: reporteDoc.id,
+            ...reporteData,
+            nombre,
+          };
+        })
+      );
       setReportes(reportesArray);
     } catch (error) {
       console.error('Error al obtener los reportes: ', error);
     }
   };
-
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -349,58 +368,59 @@ const handleSubmit = async () => {
 };
 
 const renderReporte = ({ item }) => (
-  <View style={styles.reporteItem}>
-    <Text style={styles.reporteTitle}>{item.titulo}</Text>
-    <Text style={styles.reporteText}>{item.descripcion}</Text>
-    {item.foto && <Image source={{ uri: item.foto }} style={styles.reporteImage} />}
-    {item.video && (
-      <Video
-        source={{ uri: item.video }}
-        style={styles.reporteImage}
-        useNativeControls
-        resizeMode="contain"
-        isLooping
-      />
-    )}
-    <Text style={styles.reporteEstado}>Estado: {item.estado}</Text>
-    <Text style={styles.reporteComentario}>Comentario: {item.comentario}</Text>
-    <Text
-      style={[styles.reporteText, { color: 'blue' }]}
-      onPress={() => openMap(item.coordenadas.latitud, item.coordenadas.longitud)}
-    >
-      Ver en el mapa
-    </Text>
-    <Text style={styles.reporteDate}>Fecha: {item.fecha_reportes.toDate().toString()}</Text>
-
-    {/* Condición para mostrar los botones solo si el usuario es el creador */}
-    {user && item.userId === user.uid && (
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.updateButton} onPress={() => handleUpdateButtonPress(item)}>
-          <FontAwesomeIcon name="pencil" size={20} color="white" style={styles.icon} />
-          <Text style={styles.buttonText}>Actualizar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteReporte(item.id)}>
-          <FontAwesomeIcon name="trash" size={20} color="white" style={styles.icon} />
-          <Text style={styles.buttonText}>Eliminar</Text>
-        </TouchableOpacity>
-      </View>
-    )}
-
-    {/* Mostrar los botones solo si el usuario es administrador */}
-    {isAdmin && (
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.updateButton} onPress={() => handleUpdateButtonPress(item)}>
-          <FontAwesomeIcon name="pencil" size={20} color="white" style={styles.icon} />
-          <Text style={styles.buttonText}>Actualizar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteReporte(item.id)}>
-          <FontAwesomeIcon name="trash" size={20} color="white" style={styles.icon} />
-          <Text style={styles.buttonText}>Eliminar</Text>
-        </TouchableOpacity>
-      </View>
-    )}
-  </View>
-);
+    <View style={styles.reporteItem}>
+      <Text style={styles.reporteNombreUsuario}>Reportado por: {item.nombre}</Text>
+      <Text style={styles.reporteTitle}>{item.titulo}</Text>
+      <Text style={styles.reporteText}>{item.descripcion}</Text>      
+      {item.foto && <Image source={{ uri: item.foto }} style={styles.reporteImage} />}
+      {item.video && (
+        <Video
+          source={{ uri: item.video }}
+          style={styles.reporteImage}
+          useNativeControls
+          resizeMode="contain"
+          isLooping
+        />
+      )}
+      <Text style={styles.reporteEstado}>Estado: {item.estado}</Text>
+      <Text style={styles.reporteComentario}>Comentario: {item.comentario}</Text>
+      <Text
+        style={[styles.reporteText, { color: 'blue' }]}
+        onPress={() => openMap(item.coordenadas.latitud, item.coordenadas.longitud)}
+      >
+        Ver en el mapa
+      </Text>
+      <Text style={styles.reporteDate}>Fecha: {item.fecha_reportes.toDate().toString()}</Text>
+  
+      {/* Botones de actualización y eliminación */}
+      {user && item.userId === user.uid && (
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.updateButton} onPress={() => handleUpdateButtonPress(item)}>
+            <FontAwesomeIcon name="pencil" size={20} color="white" style={styles.icon} />
+            <Text style={styles.buttonText}>Actualizar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteReporte(item.id)}>
+            <FontAwesomeIcon name="trash" size={20} color="white" style={styles.icon} />
+            <Text style={styles.buttonText}>Eliminar</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+  
+      {isAdmin && (
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.updateButton} onPress={() => handleUpdateButtonPress(item)}>
+            <FontAwesomeIcon name="pencil" size={20} color="white" style={styles.icon} />
+            <Text style={styles.buttonText}>Actualizar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteReporte(item.id)}>
+            <FontAwesomeIcon name="trash" size={20} color="white" style={styles.icon} />
+            <Text style={styles.buttonText}>Eliminar</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
+  
 
  
 
@@ -566,6 +586,12 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 10,
     marginTop: 10,
+  },
+  reporteNombreUsuario: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 5,
   },
   
 
