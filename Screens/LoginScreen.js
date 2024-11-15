@@ -10,6 +10,7 @@ const auth = getAuth(app);
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [nombre, setNombre] = useState(''); // Estado para el nombre
 
   useEffect(() => {
     checkLoginStatus();
@@ -63,7 +64,7 @@ export default function LoginScreen({ navigation }) {
   };
 
   const handleCreateAccount = async (role) => {
-    if (!email || !password) {
+    if (!nombre || !email || !password) {
       Alert.alert('Error', 'Todos los campos son obligatorios.');
       return;
     }
@@ -79,6 +80,7 @@ export default function LoginScreen({ navigation }) {
 
       await setDoc(doc(db, 'usuarios', userId), {
         email: email,
+        nombre: nombre, // Agregar el nombre
         rol: role,
       });
 
@@ -96,6 +98,13 @@ export default function LoginScreen({ navigation }) {
       <Image 
         source={require('../IMAGENES/logo2.png')}
         style={styles.logo}
+      />
+      <TextInput  
+        style={styles.input}
+        placeholder="Nombre"
+        value={nombre}
+        onChangeText={setNombre}
+        placeholderTextColor="#a9a9a9"
       />
       <TextInput  
         style={styles.input}
@@ -138,8 +147,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f4f7',
   },
   logo: {
-    width: 180,
-    height: 100,
+    width: 200,
+    height: 200,
     marginBottom: 40,
   },
   input: {
