@@ -9,9 +9,10 @@ import GreenSteps from './Screens/GreenSteps.js';
 import LoginScreen from './Screens/LoginScreen.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MapContent from './Screens/MapContent.js';
+import NotificationList from './Componentes/Notificaciones.js';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import TabNavigator from './Screens/TabNavigator.js';
-
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const Stack = createStackNavigator();
 
@@ -52,14 +53,29 @@ export default function App() {
 
   return (
     <NavigationContainer>
-    <Stack.Navigator initialRouteName={isLoggedIn ? "GreenSteps" : "Home"}>
-      <Stack.Screen name="Home" component={HomeScreen} options={{headerShown: false}} />
-      <Stack.Screen name="LoginScreen" component={LoginScreen} options={{title: 'Iniciar Sesión'}} />
-      <Stack.Screen name="GreenSteps" component={GreenSteps} options={{title: 'GreenSteps'}} />
-      <Stack.Screen name="Mapa" component={MapContent} options={{title: 'Mapa'}} />
-      <Stack.Screen name="HomeTabs" component={TabNavigator} options={{ headerShown: false }} />
-    </Stack.Navigator>
-  </NavigationContainer>
+      <Stack.Navigator initialRouteName={isLoggedIn ? "GreenSteps" : "Home"}>
+        <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="LoginScreen" component={LoginScreen} options={{ title: 'Iniciar Sesión' }} />
+        <Stack.Screen
+          name="GreenSteps"
+          component={GreenSteps}
+          options={({ navigation }) => ({
+            title: 'GreenSteps',
+            headerRight: () => (
+              <TouchableOpacity
+                style={{ marginRight: 15 }}
+                onPress={() => navigation.navigate('Notificaciones')}
+              >
+                <Icon name="notifications-outline" size={24} color="#1E88E5" />
+              </TouchableOpacity>
+            ),
+          })}
+        />
+        <Stack.Screen name="Notificaciones" component={NotificationList} options={{ title: 'Notificaciones' }} />
+        <Stack.Screen name="Mapa" component={MapContent} options={{ title: 'Mapa' }} />
+        <Stack.Screen name="HomeTabs" component={TabNavigator} options={{ headerShown: false }} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
 
