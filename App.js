@@ -9,7 +9,7 @@ import GreenSteps from './Screens/GreenSteps.js';
 import LoginScreen from './Screens/LoginScreen.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MapContent from './Screens/MapContent.js';
-import NotificationList from './Componentes/Notificaciones.js';
+import NotificacionesComponent from './Componentes/Notificaciones.js';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import TabNavigator from './Screens/TabNavigator.js';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -71,7 +71,7 @@ export default function App() {
             ),
           })}
         />
-        <Stack.Screen name="Notificaciones" component={NotificationList} options={{ title: 'Notificaciones' }} />
+        <Stack.Screen name="Notificaciones" component={NotificacionesComponent} options={{ title: 'Notificaciones' }} />
         <Stack.Screen name="Mapa" component={MapContent} options={{ title: 'Mapa' }} />
         <Stack.Screen name="HomeTabs" component={TabNavigator} options={{ headerShown: false }} />
       </Stack.Navigator>

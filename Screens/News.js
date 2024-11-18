@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getApp } from 'firebase/app';
-import { StyleSheet, View, Text, Image, TouchableOpacity, TextInput, FlatList, Linking, ActivityIndicator, Alert, Dimensions, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, Image, TouchableOpacity, TextInput, FlatList, Linking, ActivityIndicator, Alert, Dimensions, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
@@ -162,33 +162,6 @@ const NoticiasContent = () => {
             <Text style={styles.buttonText}>Actualizar</Text>
           </TouchableOpacity>
         </View>
-
-        {isUpdating && currentNoticiaId === noticia.id && (
-          <View style={styles.formContainer}>
-            <Text style={styles.formHeader}>Actualizar Noticia</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Título de la noticia"
-              value={titulo}
-              onChangeText={setTitulo}
-            />
-            <TouchableOpacity style={styles.selectImageButton} onPress={seleccionarImagen}>
-              <Icon name="image-outline" size={20} color="#fff" />
-              <Text style={styles.buttonText}>Seleccionar Imagen</Text>
-            </TouchableOpacity>
-            {foto && <Image source={{ uri: foto }} style={styles.selectedImage} />}
-            <TextInput
-              style={styles.input}
-              placeholder="URL de la noticia"
-              value={url}
-              onChangeText={setUrl}
-            />
-            <TouchableOpacity style={[styles.button, styles.updateButton]} onPress={actualizarNoticia}>
-              <Icon name="checkmark-circle-outline" size={20} color="#fff" />
-              <Text style={styles.buttonText}>Actualizar Noticia</Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
     );
   };
@@ -198,184 +171,192 @@ const NoticiasContent = () => {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.headerText}>Noticias</Text>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+      <View style={styles.container}>
+        <Text style={styles.headerText}>Noticias</Text>
 
-      {isFormVisible && !isUpdating && (
-        <View style={styles.formContainer}>
-          <Text style={styles.formHeader}>Agregar Nueva Noticia</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Título de la noticia"
-            value={titulo}
-            onChangeText={setTitulo}
-          />
-          <TouchableOpacity style={styles.selectImageButton} onPress={seleccionarImagen}>
-            <Icon name="image-outline" size={20} color="#fff" />
-            <Text style={styles.buttonText}>Seleccionar Imagen</Text>
-          </TouchableOpacity>
-          {foto && <Image source={{ uri: foto }} style={styles.selectedImage} />}
-          <TextInput
-            style={styles.input}
-            placeholder="URL de la noticia"
-            value={url}
-            onChangeText={setUrl}
-          />
-          <TouchableOpacity style={[styles.button, styles.addButton]} onPress={agregarNoticia}>
-            <Icon name="add-circle-outline" size={20} color="#fff" />
-            <Text style={styles.buttonText}>Agregar Noticia</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+        {isFormVisible && (
+          <ScrollView contentContainerStyle={styles.scrollContainer}>
+            <View style={styles.formContainer}>
+              <Text style={styles.formHeader}>
+                {isUpdating ? 'Actualizar Noticia' : 'Agregar Nueva Noticia'}
+              </Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Título de la noticia"
+                value={titulo}
+                onChangeText={setTitulo}
+              />
+              <TouchableOpacity style={styles.selectImageButton} onPress={seleccionarImagen}>
+                <Icon name="image-outline" size={20} color="#fff" />
+                <Text style={styles.buttonText}>Seleccionar Imagen</Text>
+              </TouchableOpacity>
+              {foto && <Image source={{ uri: foto }} style={styles.selectedImage} />}
+              <TextInput
+                style={styles.input}
+                placeholder="URL de la noticia"
+                value={url}
+                onChangeText={setUrl}
+              />
+              <TouchableOpacity
+                style={[styles.button, isUpdating ? styles.updateButton : styles.addButton]}
+                onPress={isUpdating ? actualizarNoticia : agregarNoticia}
+              >
+                <Icon
+                  name={isUpdating ? "checkmark-circle-outline" : "add-circle-outline"}
+                  size={20}
+                  color="#fff"
+                />
+                <Text style={styles.buttonText}>
+                  {isUpdating ? 'Actualizar Noticia' : 'Agregar Noticia'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        )}
 
-      <FlatList
-        data={noticias}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <NoticiaItem noticia={item} />}
-        contentContainerStyle={styles.listContent}
-      />
+        <FlatList
+          data={noticias}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <NoticiaItem noticia={item} />}
+          contentContainerStyle={styles.listContent}
+        />
 
-      <TouchableOpacity
-        style={styles.floatingButton}
-        onPress={() => setIsFormVisible(!isFormVisible)}
-        activeOpacity={0.7}
-      >
-        <Icon name={isFormVisible ? "close-circle" : "add-circle"} size={60} color="#007bff" />
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity
+          style={styles.floatingButton}
+          onPress={() => setIsFormVisible(!isFormVisible)}
+          activeOpacity={0.7}
+        >
+          <Icon name={isFormVisible ? "close-circle" : "add-circle"} size={60} color="#007bff" />
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
-
-const { width } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
-    paddingTop: 40,
-    paddingHorizontal: 10,
+    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   headerText: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
     color: '#333',
-  },
-  listContent: {
-    paddingBottom: 100,
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 15,
-    marginBottom: 20,
-    overflow: 'hidden',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  cardImage: {
-    width: '100%',
-    height: 200,
-    resizeMode: 'cover',
-  },
-  cardContent: {
-    padding: 15,
-  },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#222',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 15,
-    paddingBottom: 15,
-    marginTop: -10,
-  },
-  button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    flex: 1,
-    justifyContent: 'center',
-    marginHorizontal: 5,
-  },
-  deleteButton: {
-    backgroundColor: '#e63946',
-  },
-  updateButton: {
-    backgroundColor: '#457b9d',
-  },
-  addButton: {
-    backgroundColor: '#1d3557',
-  },
-  buttonText: {
-    color: '#fff',
-    marginLeft: 5,
-    fontSize: 16,
-  },
-  formContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: 20,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  formHeader: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 15,
-    color: '#333',
-    textAlign: 'center',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 15,
-    fontSize: 16,
-    backgroundColor: '#f9fafb',
-  },
-  selectImageButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2a9d8f',
-    borderRadius: 8,
-    padding: 10,
-    justifyContent: 'center',
-    marginBottom: 15,
-  },
-  selectedImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 10,
-    marginBottom: 15,
-  },
-  floatingButton: {
-    position: 'absolute',
-    bottom: 80, // Aumenta este valor para evitar que lo tape la barra
-    right: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 5,
+    marginBottom: 16,
   },
   loading: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginBottom: 16,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+  },
+  cardImage: {
+    width: '100%',
+    height: 200,
+  },
+  cardContent: {
+    padding: 16,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  deleteButton: {
+    backgroundColor: '#d9534f',
+  },
+  updateButton: {
+    backgroundColor: '#5bc0de',
+  },
+  addButton: {
+    backgroundColor: '#5cb85c',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  formContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+  },
+  formHeader: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    color: '#333',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    marginBottom: 16,
+    backgroundColor: '#fff',
+  },
+  selectImageButton: {
+    backgroundColor: '#007bff',
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  selectedImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  floatingButton: {
+    position: 'absolute',
+    bottom: 50,
+    right: 20,
+    elevation: 5,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+  },
+  listContent: {
+    paddingBottom: 80,
   },
 });
 
