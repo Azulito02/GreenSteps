@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
-import { collection, getFirestore, getDocs, doc, getDoc } from 'firebase/firestore';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { collection, getFirestore, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getApp } from 'firebase/app';
 
 const app = getApp();
@@ -68,13 +68,46 @@ const NotificacionesComponent = () => {
     }
   };
 
+  const marcarNotificacionComoLeida = async (id) => {
+    try {
+      const notificacionRef = doc(firestore, 'notificaciones', id);
+      await updateDoc(notificacionRef, { leida: true });
+      setNotificaciones((prev) =>
+        prev.map((notif) =>
+          notif.id === id ? { ...notif, leida: true } : notif
+        )
+      );
+    } catch (error) {
+      console.error('Error al marcar notificación como leída:', error);
+    }
+  };
+
+  const marcarReporteComoLeido = async (id) => {
+    try {
+      const reporteRef = doc(firestore, 'reportes', id);
+      await updateDoc(reporteRef, { leido: true });
+      setReportes((prev) =>
+        prev.map((reporte) =>
+          reporte.id === id ? { ...reporte, leido: true } : reporte
+        )
+      );
+    } catch (error) {
+      console.error('Error al marcar reporte como leído:', error);
+    }
+  };
+
   useEffect(() => {
     fetchNotificaciones();
     fetchReportes();
   }, []);
 
   const renderNotificacion = ({ item }) => (
-    <View style={styles.notificacionItem}>
+    <View
+      style={[
+        styles.notificacionItem,
+        item.leida ? styles.notificacionLeida : styles.notificacionNoLeida,
+      ]}
+    >
       <Text style={styles.notificacionTitle}>{item.titulo}</Text>
       <Text style={styles.notificacionText}>{item.mensaje}</Text>
       {item.fecha_creacion && (
@@ -82,23 +115,44 @@ const NotificacionesComponent = () => {
           Fecha: {item.fecha_creacion.toDate().toLocaleDateString()}
         </Text>
       )}
+      {!item.leida && (
+        <TouchableOpacity
+          style={styles.markAsReadButton}
+          onPress={() => marcarNotificacionComoLeida(item.id)}
+        >
+          <Text style={styles.markAsReadButtonText}>Marcar como leída</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 
-  const renderReporte = ({ item }) => {
-    const mensaje = `${item.nombre} reportó: ${item.titulo || 'Sin título'} - ${item.descripcion || 'Sin descripción'}`;
-  
-    return (
-      <View style={styles.notificacionItem}>
-        <Text style={styles.notificacionText}>{mensaje}</Text>
-        {item.fecha_reportes && (
-          <Text style={styles.notificacionDate}>
-            Fecha: {item.fecha_reportes.toDate().toLocaleDateString()}
-          </Text>
-        )}
-      </View>
-    );
-  };
+  const renderReporte = ({ item }) => (
+    <View
+      style={[
+        styles.notificacionItem,
+        item.leido ? styles.notificacionLeida : styles.notificacionNoLeida,
+      ]}
+    >
+      <Text style={styles.notificacionText}>
+        {`${item.nombre} reportó: ${item.titulo || 'Sin título'} - ${
+          item.descripcion || 'Sin descripción'
+        }`}
+      </Text>
+      {item.fecha_reportes && (
+        <Text style={styles.notificacionDate}>
+          Fecha: {item.fecha_reportes.toDate().toLocaleDateString()}
+        </Text>
+      )}
+      {!item.leido && (
+        <TouchableOpacity
+          style={styles.markAsReadButton}
+          onPress={() => marcarReporteComoLeido(item.id)}
+        >
+          <Text style={styles.markAsReadButtonText}>Marcar como leído</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -134,7 +188,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   notificacionItem: {
-    backgroundColor: '#fff',
     padding: 15,
     borderRadius: 10,
     marginBottom: 20,
@@ -143,6 +196,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 5,
     elevation: 3,
+  },
+  notificacionNoLeida: {
+    backgroundColor: '#e0f7fa',
+  },
+  notificacionLeida: {
+    backgroundColor: '#fff',
   },
   notificacionTitle: {
     fontSize: 18,
@@ -154,14 +213,22 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     color: '#555',
   },
-  notificacionUser: {
-    fontSize: 14,
-    marginBottom: 5,
-    color: '#333',
-  },
   notificacionDate: {
     fontSize: 12,
     color: '#888',
+  },
+  markAsReadButton: {
+    marginTop: 10,
+    backgroundColor: '#007BFF',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+  },
+  markAsReadButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
 
