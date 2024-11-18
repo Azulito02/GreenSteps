@@ -193,107 +193,43 @@ const NoticiasContent = () => {
   }
 
   return (
-    <View style={styles.contentContainer}>
-      <Text style={styles.headerText}>Noticias</Text>
-
-      {isFormVisible && (
-        <View style={styles.formContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Título de la noticia"
-            value={titulo}
-            onChangeText={setTitulo}
-          />
-          <TouchableOpacity style={styles.selectImageButton} onPress={seleccionarImagen}>
-            <Icon name="image-outline" size={20} color="#fff" />
-            <Text style={styles.buttonText}>Seleccionar Imagen</Text>
-          </TouchableOpacity>
-          {foto && <Image source={{ uri: foto }} style={styles.selectedImage} />}
-          <TextInput
-            style={styles.input}
-            placeholder="URL de la noticia"
-            value={url}
-            onChangeText={setUrl}
-          />
-          <TouchableOpacity style={styles.button} onPress={agregarNoticia}>
-            <Icon name="add-circle-outline" size={20} color="#fff" />
-            <Text style={styles.buttonText}>Agregar Noticia</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      <FlatList
-        data={noticias}
-        renderItem={({ item }) => <NoticiaItem noticia={item} />}
-        keyExtractor={(item) => item.id}
-      />
-
-      <TouchableOpacity
-        style={styles.floatingButton}
-        onPress={() => setIsFormVisible(!isFormVisible)}
-      >
-        <Icon name="add-circle" size={60} color="#007bff" />
-      </TouchableOpacity>
-    </View>
+    <FlatList
+      data={noticias}
+      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => <NoticiaItem noticia={item} />}
+    />
   );
 };
 
 const styles = StyleSheet.create({
-  contentContainer: {
-    flex: 1,
-    padding: 10,
-    backgroundColor: '#f9f9f9',
-  },
-  headerText: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginVertical: 20,
-  },
-  formContainer: {
-    marginBottom: 20,
-    padding: 10,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 8,
-    marginVertical: 5,
-    borderRadius: 5,
-  },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 15,
+    backgroundColor: '#ffffff',
+    borderRadius: 15,
     marginBottom: 15,
+    overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
     shadowRadius: 5,
-    elevation: 5,
+    elevation: 3,
   },
   cardImage: {
     width: '100%',
-    height: 200,
-    resizeMode: 'cover',
-    borderRadius: 8,
+    height: 150,
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginVertical: 10,
+    color: '#333',
+    padding: 15,
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 10,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
   },
   button: {
     flexDirection: 'row',
@@ -308,6 +244,19 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     marginLeft: 5,
+  },
+  formContainer: {
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    marginTop: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 8,
+    marginVertical: 5,
+    borderRadius: 5,
   },
   selectImageButton: {
     flexDirection: 'row',
@@ -324,14 +273,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginVertical: 10,
   },
-  floatingButton: {
-    position: 'absolute',
-    bottom: 50,
-    right: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  
 });
 
 export default NoticiasContent;

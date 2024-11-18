@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getApp } from 'firebase/app';
-import { StyleSheet, View, Text, Image, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { StyleSheet, View, Text, Image, TouchableOpacity, FlatList, ActivityIndicator, Linking, Alert } from 'react-native';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import Icon from 'react-native-vector-icons/Ionicons'; // Asegúrate de tener esta librería instalada
 
@@ -40,6 +40,13 @@ const NoticiasContentUser = () => {
         <Image source={{ uri: noticia.foto }} style={styles.cardImage} />
         <View style={styles.cardContent}>
           <Text style={styles.cardTitle}>{noticia.titulo}</Text>
+          {noticia.descripcion && (
+            <Text style={styles.cardDescription}>{noticia.descripcion}</Text>
+          )}
+          <View style={styles.cardFooter}>
+            <Text style={styles.cardDate}>Publicado el: {new Date(noticia.fecha).toLocaleDateString()}</Text>
+            <Icon name="arrow-forward-circle-outline" size={20} color="#007bff" />
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -57,6 +64,7 @@ const NoticiasContentUser = () => {
         data={noticias}
         renderItem={({ item }) => <NoticiaItem noticia={item} />}
         keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
       />
     </View>
   );
@@ -65,31 +73,62 @@ const NoticiasContentUser = () => {
 const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
-    padding: 10,
-    backgroundColor: '#f9f9f9',
   },
   headerText: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
     marginVertical: 20,
+    color: '#333',
+  },
+  listContent: {
+    paddingHorizontal: 10,
+    paddingBottom: 20,
   },
   card: {
     backgroundColor: '#fff',
     borderRadius: 10,
-    padding: 15,
     marginBottom: 15,
+    overflow: 'hidden',
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 5,
+    shadowRadius: 4,
   },
   cardImage: {
     width: '100%',
     height: 200,
     resizeMode: 'cover',
-    borderRadius: 8,
+  },
+  cardContent: {
+    padding: 15,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#222',
+    marginBottom: 5,
+  },
+  cardDescription: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 10,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  cardDate: {
+    fontSize: 12,
+    color: '#888',
+  },
+  loading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
