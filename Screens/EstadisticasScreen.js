@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions, ActivityIndicator, Button, Alert } from 'react-native';
-import { BarChart } from 'react-native-chart-kit';
+import { View, Text, StyleSheet, Dimensions, ActivityIndicator, Button, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import { PieChart } from 'react-native-chart-kit';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import { app } from '../bd/firebaseconfig';
 import { jsPDF } from 'jspdf';
@@ -14,8 +14,9 @@ const EstadisticasScreen = () => {
   const [reportesPorUsuario, setReportesPorUsuario] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const usuariosChartRef = useRef(); 
-  const reportesChartRef = useRef(); 
+  const usuariosChartRef = useRef();
+  const reportesChartRef = useRef();
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -23,83 +24,57 @@ const EstadisticasScreen = () => {
         const usersSnapshot = await getDocs(collection(db, 'usuarios'));
         const usuariosData = {};
         let usuariosCount = 0;
-    
+
         usersSnapshot.forEach(doc => {
           const nombre = doc.data().nombre || 'Usuario Desconocido';
           usuariosData[doc.id] = nombre;
-          usuariosCount += 1; // Contamos cada usuario
+          usuariosCount += 1;
         });
-        console.log("Usuarios obtenidos:", usuariosData);
-    
-        // Obtener reportes y procesarlos
+
+        // Obtener reportes
         const reportesSnapshot = await getDocs(collection(db, 'reportes'));
         const reportesPorUsuarioData = {};
         let reportesCount = 0;
-    
+
         reportesSnapshot.forEach(doc => {
           const reporte = doc.data();
           const userId = reporte.userId;
-          reportesCount += 1; // Contamos cada reporte
-    
+          reportesCount += 1;
+
           if (userId && usuariosData[userId]) {
             reportesPorUsuarioData[userId] = (reportesPorUsuarioData[userId] || 0) + 1;
-          } else {
-            console.warn(`Usuario con ID ${userId} no encontrado en usuariosData o no tiene nombre.`);
           }
         });
-    
-        // Obtener artículos (si la colección de artículos existe en Firestore)
+
+        // Obtener artículos
         const articulosSnapshot = await getDocs(collection(db, 'articulos'));
-        const articulosCount = articulosSnapshot.size; // Contamos los documentos de artículos
-    
-        // Actualizar el estado `data` con los conteos
+        const articulosCount = articulosSnapshot.size;
+
         setData({
           usuarios: usuariosCount,
           articulos: articulosCount,
           reportes: reportesCount,
         });
-  
-        // Filtrar usuarios que tienen al menos un reporte
-        const reportesPorUsuarioArray = Object.keys(reportesPorUsuarioData)
+
+        // Procesar datos para reportes por usuario
+        setReportesPorUsuario(Object.keys(reportesPorUsuarioData)
           .map(userId => ({
             usuario: usuariosData[userId],
             cantidad: reportesPorUsuarioData[userId],
           }))
-          .filter(item => item.cantidad > 0); // Filtrar para incluir solo usuarios con reportes
-    
-        setReportesPorUsuario(reportesPorUsuarioArray);
+          .filter(item => item.cantidad > 0)
+        );
       } catch (error) {
         console.error('Error al obtener estadísticas:', error);
       } finally {
         setIsLoading(false);
       }
     };
-  
+
     fetchData();
   }, []);
-  
-  
 
-  const chartData = {
-    labels: ['Usuarios', 'Artículos', 'Reportes'],
-    datasets: [
-      {
-        data: [data.usuarios, data.articulos, data.reportes],
-      },
-    ],
-  };
-
-  const reportesPorUsuarioData = {
-    labels: reportesPorUsuario.map(item => item.usuario), 
-    datasets: [
-      {
-        data: reportesPorUsuario.map(item => item.cantidad),
-      },
-    ],
-  };
-
-  const colors = ['#FF6384', '#36A2EB', '#FFCE56']; // Colores para cada barra
-
+  // Función para generar PDF
   const generatePDF = async (chartRef, title, data) => {
     try {
       const uri = await captureRef(chartRef, {
@@ -135,19 +110,28 @@ const EstadisticasScreen = () => {
     }
   };
 
+  const CustomButton = ({ title, onPress }) => (
+    <TouchableOpacity style={styles.button} onPress={onPress}>
+      <Text style={styles.buttonText}>{title}</Text>
+    </TouchableOpacity>
+  );
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Estadísticas</Text>
+    <ScrollView contentContainerStyle={styles.container}>
       {isLoading ? (
         <ActivityIndicator size="large" color="#0000ff" />
       ) : (
         <>
-          <View ref={usuariosChartRef} collapsable={false}>
-            <BarChart
-              data={chartData}
+          <Text style={styles.subtitle}>Estadísticas Generales</Text>
+          <View ref={usuariosChartRef} style={styles.chartContainer}>
+            <PieChart
+              data={[
+                { name: 'Usuarios', population: data.usuarios, color: '#FF6384', legendFontColor: "#7F7F7F", legendFontSize: 12 },
+                { name: 'Artículos', population: data.articulos, color: '#36A2EB', legendFontColor: "#7F7F7F", legendFontSize: 12 },
+                { name: 'Reportes', population: data.reportes, color: '#FFCE56', legendFontColor: "#7F7F7F", legendFontSize: 12 }
+              ]}
               width={Dimensions.get('window').width - 30}
               height={220}
-              yAxisLabel=""
               chartConfig={{
                 backgroundColor: '#1cc910',
                 backgroundGradientFrom: '#eff3ff',
@@ -155,51 +139,55 @@ const EstadisticasScreen = () => {
                 decimalPlaces: 0,
                 color: (opacity = 1) => `rgba(0, 123, 255, ${opacity})`,
               }}
-              style={{
-                borderRadius: 10,
-              }}
+              accessor="population"
+              backgroundColor="transparent"
             />
           </View>
-          <Button title="Generar PDF" onPress={() => generatePDF(usuariosChartRef, 'Estadísticas Generales', [
+          <CustomButton title="Generar PDF" onPress={() => generatePDF(usuariosChartRef, 'Estadísticas Generales', [
             { label: 'Usuarios', value: data.usuarios },
             { label: 'Artículos', value: data.articulos },
             { label: 'Reportes', value: data.reportes },
           ])} />
 
           <Text style={styles.subtitle}>Reportes por Usuario</Text>
-          <View ref={reportesChartRef} collapsable={false}>
-            <BarChart
-              data={reportesPorUsuarioData}
+          <View ref={reportesChartRef} style={styles.chartContainer}>
+            <PieChart
+              data={reportesPorUsuario.map(item => ({
+                name: item.usuario,
+                population: item.cantidad,
+                color: `hsl(${Math.random() * 360}, 70%, 60%)`, // Color aleatorio
+                legendFontColor: "#7F7F7F",
+                legendFontSize: 12
+              }))}
               width={Dimensions.get('window').width - 30}
               height={220}
-              yAxisLabel=""
               chartConfig={{
-                backgroundColor: 'purple',
+                backgroundColor: '#FF5733',
                 backgroundGradientFrom: '#eff3ff',
                 backgroundGradientTo: '#efefef',
                 decimalPlaces: 0,
                 color: (opacity = 1) => `rgba(0, 123, 255, ${opacity})`,
               }}
-              style={{
-                borderRadius: 10,
-              }}
+              accessor="population"
+              backgroundColor="transparent"
             />
           </View>
-          <Button title="Generar PDF " onPress={() => generatePDF(reportesChartRef, 'Reportes por Usuario', reportesPorUsuario.map(item => ({
+          <CustomButton title="Generar PDF" onPress={() => generatePDF(reportesChartRef, 'Reportes por Usuario', reportesPorUsuario.map(item => ({
             label: item.usuario,
             value: item.cantidad,
           })))} />
         </>
       )}
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    padding: 10,
   },
   title: {
     fontSize: 24,
@@ -211,6 +199,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 20,
     marginBottom: 10,
+  },
+  chartContainer: {
+    marginBottom: 20,
+  },
+  button: {
+    backgroundColor: '#007BFF',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginVertical: 10,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
