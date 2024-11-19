@@ -367,6 +367,13 @@ const handleSubmit = async () => {
   }
 };
 
+useEffect(() => {
+  // Redirige al login si el usuario no está autenticado
+  if (!user) {
+    navigation.navigate("LoginScreen");
+  }
+}, [user]);
+
 const renderReporte = ({ item }) => (
     <View style={styles.reporteItem}>
       <Text style={styles.reporteNombreUsuario}>Reportado por: {item.nombre}</Text>
@@ -421,104 +428,90 @@ const renderReporte = ({ item }) => (
     </View>
   );
   
-
- 
-
-return (
-  
-  <View style={styles.container}>
-    {user ? (
+  return (
+    <View style={styles.container}>
+      {user && (
         <>
-        
-      </>
-    ) : (
-      <>
-        <Text>No estás autenticado. Inicia sesión para continuar.</Text>
-        <Button title="Ir a inicio de sesión" onPress={() => navigation.navigate('LoginScreen')} />
-      </>
-    )}
-    {isViewingReportes ? (
-      <View>
-        <FlatList
-          data={reportes}
-          renderItem={renderReporte}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.reporteList}
-        />
-      </View>
-    ) : (
-      <View>
-        <TextInput
-          style={styles.input}
-          placeholder="Título"
-          value={titulo}
-          onChangeText={setTitulo}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Descripción"
-          value={descripcion}
-          onChangeText={setDescripcion}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Comentario"
-          value={comentario}
-          onChangeText={setComentario}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Estado"
-          value={estado}
-          onChangeText={setEstado}
-        />
-    <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-      <Text style={styles.buttonText}>Enviar Reporte</Text>
-    </TouchableOpacity>
+          {isViewingReportes ? (
+            <View>
+              <FlatList
+                data={reportes}
+                renderItem={renderReporte}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.reporteList}
+              />
+            </View>
+          ) : (
+            <View>
+              <TextInput
+                style={styles.input}
+                placeholder="Título"
+                value={titulo}
+                onChangeText={setTitulo}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Descripción"
+                value={descripcion}
+                onChangeText={setDescripcion}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Comentario"
+                value={comentario}
+                onChangeText={setComentario}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Estado"
+                value={estado}
+                onChangeText={setEstado}
+              />
+              <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+                <Text style={styles.buttonText}>Enviar Reporte</Text>
+              </TouchableOpacity>
 
-    <Button title="Agregar Imagen o Video" onPress={pickMedia} />
+              <Button title="Agregar Imagen o Video" onPress={pickMedia} />
 
-    {isLoading && <ActivityIndicator size="large" color="#0000ff" />}
+              {isLoading && <ActivityIndicator size="large" color="#0000ff" />}
 
-    {/* Mostrar imagen seleccionada si existe */}
-    {media.length > 0 && media[0].type === 'image' && (
-      <Image
-        source={{ uri: media[0].uri }}
-        style={styles.selectedImage}
-      />
-    )}
+              {/* Mostrar imagen seleccionada si existe */}
+              {media.length > 0 && media[0].type === "image" && (
+                <Image source={{ uri: media[0].uri }} style={styles.selectedImage} />
+              )}
 
+              <FlatList
+                data={media}
+                renderItem={renderItem}
+                keyExtractor={(item) => item.uri}
+                contentContainerStyle={styles.mediaList}
+              />
+            </View>
+          )}
 
-        <FlatList
-          data={media}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.uri}
-          contentContainerStyle={styles.mediaList}
-        />
-      </View>
-    )}
-
-    {/* Botón circular flotante */}
-    <TouchableOpacity
-  style={styles.floatingButton}
-  onPress={() => {
-    console.log("Alternar vista: ", !isViewingReportes);
-    setIsViewingReportes(!isViewingReportes);
-  }}
->
-      <Icon name="add-circle" size={60} color="#007bff" />
-    </TouchableOpacity>
-    <EditModal
-        visible={isEditModalVisible}
-        onClose={() => setIsEditModalVisible(false)}
-        reporte={selectedReporte} 
-        onSave={handleUpdateReporte} 
-      />
-
-  </View>
-);
+          {/* Botón circular flotante */}
+          <TouchableOpacity
+            style={styles.floatingButton}
+            onPress={() => {
+              console.log("Alternar vista: ", !isViewingReportes);
+              setIsViewingReportes(!isViewingReportes);
+            }}
+          >
+            <Icon name="add-circle" size={60} color="#007bff" />
+          </TouchableOpacity>
+          
+          {/* Modal para editar reportes */}
+          <EditModal
+            visible={isEditModalVisible}
+            onClose={() => setIsEditModalVisible(false)}
+            reporte={selectedReporte}
+            onSave={handleUpdateReporte}
+          />
+        </>
+      )}
+    </View>
+  );
 };
-
 
 const styles = StyleSheet.create({
   container: { 
