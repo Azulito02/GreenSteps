@@ -9,29 +9,21 @@ import { getApp } from 'firebase/app';
 const app = getApp();
 const firestore = getFirestore(app);
 
-const MapContent = ({ route, navigation }) => {
+const MapContent = ({ route }) => {
   const initialLatitude = route?.params?.latitude || 12.8654;
   const initialLongitude = route?.params?.longitude || -85.2072;
 
   const mapRef = useRef(null);
-  const [markers, setMarkers] = useState([
-    {
-      latitude: initialLatitude,
-      longitude: initialLongitude,
-      title: 'Ubicación inicial',
-      description: 'Este es el lugar preciso al que se hace referencia',
-      severity: 'blue',
-    },
-  ]);
+  const [markers, setMarkers] = useState([]);
   const [location, setLocation] = useState(null);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const [loadingMarkers, setLoadingMarkers] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [selectedPinIndex, setSelectedPinIndex] = useState(null);
+  const [selectedPinId, setSelectedPinId] = useState(null);
 
   useEffect(() => {
     (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
+      const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permiso denegado', 'Necesitamos acceso a tu ubicación para centrar el mapa.');
         return;
@@ -43,12 +35,12 @@ const MapContent = ({ route, navigation }) => {
   useEffect(() => {
     const fetchMarkers = async () => {
       try {
-        const querySnapshot = await getDocs(collection(firestore, 'Marcadores'));
+        const querySnapshot = await getDocs(collection(firestore, 'marcadores'));
         const loadedMarkers = [];
         querySnapshot.forEach((doc) => {
           loadedMarkers.push({ id: doc.id, ...doc.data() });
         });
-        setMarkers((currentMarkers) => [...currentMarkers, ...loadedMarkers]);
+        setMarkers(loadedMarkers);
         setLoadingMarkers(false);
       } catch (error) {
         console.error('Error al cargar los marcadores:', error);
@@ -64,20 +56,21 @@ const MapContent = ({ route, navigation }) => {
       return;
     }
 
-    let userLocation = await Location.getCurrentPositionAsync({});
-    const { latitude, longitude } = userLocation.coords;
+    try {
+      const userLocation = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = userLocation.coords;
 
-    setLocation({
-      latitude,
-      longitude,
-    });
+      setLocation({ latitude, longitude });
 
-    mapRef.current.animateToRegion({
-      latitude,
-      longitude,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    });
+      mapRef.current.animateToRegion({
+        latitude,
+        longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      });
+    } catch (error) {
+      console.error('Error al obtener la ubicación del usuario:', error);
+    }
   };
 
   const handleMapPress = (event) => {
@@ -87,37 +80,20 @@ const MapContent = ({ route, navigation }) => {
       'Selecciona el color del pin',
       'Elige la severidad del nuevo pin:',
       [
-        {
-          text: 'Rojo (grave)',
-          onPress: () => addNewPin(latitude, longitude, 'red'),
-        },
-        {
-          text: 'Amarillo (leve)',
-          onPress: () => addNewPin(latitude, longitude, 'yellow'),
-        },
-        {
-          text: 'Verde (Estable)',
-          onPress: () => addNewPin(latitude, longitude, 'green'),
-        },
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-        },
+        { text: 'Rojo (grave)', onPress: () => addNewPin(latitude, longitude, 'red') },
+        { text: 'Amarillo (leve)', onPress: () => addNewPin(latitude, longitude, 'yellow') },
+        { text: 'Verde (Estable)', onPress: () => addNewPin(latitude, longitude, 'green') },
+        { text: 'Cancelar', style: 'cancel' },
       ]
     );
   };
 
   const addNewPin = async (latitude, longitude, severity) => {
-    const newMarker = {
-      latitude,
-      longitude,
-      severity,
-    };
-
-    setMarkers((currentMarkers) => [...currentMarkers, newMarker]);
+    const newMarker = { latitude, longitude, severity };
 
     try {
-      await addDoc(collection(firestore, 'Marcadores'), newMarker);
+      const docRef = await addDoc(collection(firestore, 'marcadores'), newMarker);
+      setMarkers((currentMarkers) => [...currentMarkers, { ...newMarker, id: docRef.id }]);
       console.log('Pin guardado exitosamente en Firestore');
     } catch (error) {
       console.error('Error al guardar el pin:', error);
@@ -137,27 +113,20 @@ const MapContent = ({ route, navigation }) => {
     }
   };
 
-  const handleMarkerPress = (index) => {
-    setSelectedPinIndex(index);
+  const handleMarkerPress = (id) => {
+    setSelectedPinId(id);
     setShowModal(true);
   };
 
-  const changePinColor = async (index, newSeverity) => {
-    const markerToUpdate = markers[index];
-    if (!markerToUpdate.id) {
-      console.error('Error: El pin no tiene un ID válido.');
-      return;
-    }
-
-    setMarkers((currentMarkers) =>
-      currentMarkers.map((marker, markerIndex) =>
-        markerIndex === index ? { ...marker, severity: newSeverity } : marker
-      )
-    );
-
+  const changePinColor = async (id, newSeverity) => {
     try {
-      const markerDoc = doc(firestore, 'Marcadores', markerToUpdate.id);
+      const markerDoc = doc(firestore, 'marcadores', id);
       await updateDoc(markerDoc, { severity: newSeverity });
+      setMarkers((currentMarkers) =>
+        currentMarkers.map((marker) =>
+          marker.id === id ? { ...marker, severity: newSeverity } : marker
+        )
+      );
       console.log('Pin actualizado exitosamente en Firestore');
     } catch (error) {
       console.error('Error al actualizar el pin:', error);
@@ -165,21 +134,12 @@ const MapContent = ({ route, navigation }) => {
     setShowModal(false);
   };
 
-  const deletePin = async (index) => {
-    const markerToDelete = markers[index];
-    if (!markerToDelete.id) {
-      console.error('Error: El pin no tiene un ID válido.');
-      return;
-    }
-
+  const deletePin = async (id) => {
     try {
-      const markerDoc = doc(firestore, 'Marcadores', markerToDelete.id);
+      const markerDoc = doc(firestore, 'marcadores', id);
       await deleteDoc(markerDoc);
+      setMarkers((currentMarkers) => currentMarkers.filter((marker) => marker.id !== id));
       console.log('Pin eliminado exitosamente de Firestore');
-
-      setMarkers((currentMarkers) =>
-        currentMarkers.filter((_, markerIndex) => markerIndex !== index)
-      );
     } catch (error) {
       console.error('Error al eliminar el pin:', error);
     }
@@ -199,43 +159,59 @@ const MapContent = ({ route, navigation }) => {
         }}
         onPress={handleMapPress}
       >
-        {markers.map((marker, index) => (
+        {markers.map((marker) => (
           <Marker
-            key={index}
-            coordinate={{
-              latitude: marker.latitude,
-              longitude: marker.longitude,
-            }}
+            key={marker.id}
+            coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}
             title={marker.title || 'Pin'}
             description={marker.description || ''}
             pinColor={getPinColor(marker.severity)}
-            onPress={() => handleMarkerPress(index)}
+            onPress={() => handleMarkerPress(marker.id)}
           />
         ))}
       </MapView>
 
-      <TouchableOpacity style={styles.locationButton} onPress={centerOnUserLocation}>
-        <MaterialIcons name="my-location" size={24} color="white" />
+      <TouchableOpacity
+        style={styles.locationButton}
+        onPress={centerOnUserLocation}
+        activeOpacity={0.7}
+      >
+        <MaterialIcons name="my-location" size={28} color="white" />
       </TouchableOpacity>
 
       <Modal visible={showModal} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Opciones del Pin</Text>
-            <TouchableOpacity onPress={() => changePinColor(selectedPinIndex, 'red')}>
-              <Text style={styles.modalOption}>Cambiar a rojo (grave)</Text>
+            <TouchableOpacity
+              style={styles.modalOptionButton}
+              onPress={() => changePinColor(selectedPinId, 'red')}
+            >
+              <Text style={styles.modalOptionText}>Cambiar a rojo (grave)</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => changePinColor(selectedPinIndex, 'yellow')}>
-              <Text style={styles.modalOption}>Cambiar a amarillo (leve)</Text>
+            <TouchableOpacity
+              style={styles.modalOptionButton}
+              onPress={() => changePinColor(selectedPinId, 'yellow')}
+            >
+              <Text style={styles.modalOptionText}>Cambiar a amarillo (leve)</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => changePinColor(selectedPinIndex, 'green')}>
-              <Text style={styles.modalOption}>Cambiar a verde (Estable)</Text>
+            <TouchableOpacity
+              style={styles.modalOptionButton}
+              onPress={() => changePinColor(selectedPinId, 'green')}
+            >
+              <Text style={styles.modalOptionText}>Cambiar a verde (Estable)</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => deletePin(selectedPinIndex)}>
-              <Text style={[styles.modalOption, { color: 'red' }]}>Eliminar pin</Text>
+            <TouchableOpacity
+              style={[styles.modalOptionButton, styles.deleteButton]}
+              onPress={() => deletePin(selectedPinId)}
+            >
+              <Text style={styles.modalOptionText}>Eliminar pin</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowModal(false)}>
-              <Text style={styles.modalOption}>Cancelar</Text>
+            <TouchableOpacity
+              style={[styles.modalOptionButton, styles.cancelButton]}
+              onPress={() => setShowModal(false)}
+            >
+              <Text style={styles.modalOptionText}>Cancelar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -251,14 +227,14 @@ const styles = StyleSheet.create({
   },
   locationButton: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 80,
     right: 20,
-    backgroundColor: '#008000',
-    padding: 10,
-    borderRadius: 50,
+    backgroundColor: '#4CAF50',
+    padding: 12,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5,
+    elevation: 8,
   },
   mapContainer: {
     flex: 1,
@@ -270,24 +246,44 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   modalContent: {
-    width: '80%',
+    width: '90%',
     padding: 20,
-    backgroundColor: 'white',
-    borderRadius: 10,
+    backgroundColor: '#fff',
+    borderRadius: 15,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 10,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
+    color: '#333',
   },
-  modalOption: {
+  modalOptionButton: {
+    width: '100%',
+    padding: 15,
+    borderRadius: 10,
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+    marginBottom: 10,
+    elevation: 2,
+  },
+  modalOptionText: {
     fontSize: 16,
-    color: 'blue',
-    paddingVertical: 10,
+    color: '#555',
+  },
+  deleteButton: {
+    backgroundColor: '#FF5252',
+  },
+  cancelButton: {
+    backgroundColor: '#B0BEC5',
   },
 });
 
