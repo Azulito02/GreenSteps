@@ -32,7 +32,7 @@ const EditModal = ({ visible, onClose, reporte, onSave }) => {
       setEditTitulo(reporte.titulo);
       setEditDescripcion(reporte.descripcion);
       setEditEstado(reporte.estado);
-      setEditComentario(reporte.comentario);
+
     }
   }, [reporte]);
 
@@ -124,7 +124,7 @@ const EditModal = ({ visible, onClose, reporte, onSave }) => {
             </TouchableOpacity>
           </View>
 
-          <TextInput style={styles.input} placeholder="Comentario" value={editComentario} onChangeText={setEditComentario} />
+          
 
           <TouchableOpacity style={styles.button} onPress={pickNewPhoto}>
             <Text style={styles.buttonText}>Seleccionar Nueva Foto</Text>
@@ -322,7 +322,7 @@ const ReportContent = () => {
 
 
   const handleSubmit = async () => {
-    if (!titulo.trim() || !descripcion.trim() || !estado.trim() || !comentario.trim()) {
+    if (!titulo.trim() || !descripcion.trim() || !estado.trim()) {
       alert('Por favor, completa todos los campos obligatorios.');
       return;
     }
@@ -346,7 +346,6 @@ const ReportContent = () => {
         fecha_reportes: Timestamp.now(),
         foto: fotoURL,
         video: videoURL,
-        comentario,
         userId: user.uid,
         coordenadas: {
           latitud: location?.latitude || 0,
@@ -396,7 +395,7 @@ const renderReporte = ({ item }) => (
         />
       )}
       <Text style={styles.reporteEstado}>Estado: {item.estado}</Text>
-      <Text style={styles.reporteComentario}>Comentario: {item.comentario}</Text>
+      
       <Text
         style={[styles.reporteText, { color: 'blue' }]}
         onPress={() => openMap(item.coordenadas.latitud, item.coordenadas.longitud)}
@@ -464,15 +463,8 @@ const renderReporte = ({ item }) => (
                   onChangeText={setDescripcion}
                 />
               </View>
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Comentario</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Agrega un comentario adicional"
-                  value={comentario}
-                  onChangeText={setComentario}
-                />
-              </View>
+              
+              
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Estado</Text>
                 <View style={styles.pickerContainer}>
