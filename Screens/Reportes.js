@@ -320,52 +320,54 @@ const ReportContent = () => {
 
 
 
-const handleSubmit = async () => {
-  if (!titulo.trim() || !descripcion.trim() || !estado.trim() || !comentario.trim()) {
-    alert('Por favor, completa todos los campos obligatorios.');
-    return;
-  }
-  try {
-    setIsLoading(true);
-    let fotoURL = '';
-    let videoURL = '';
-
-    for (const item of media) {
-      if (item.type === 'image') {
-        fotoURL = await uploadMedia(item.uri, 'image');
-      } else if (item.type === 'video') {
-        videoURL = await uploadMedia(item.uri, 'video');
-      }
+  const handleSubmit = async () => {
+    if (!titulo.trim() || !descripcion.trim() || !estado.trim() || !comentario.trim()) {
+      alert('Por favor, completa todos los campos obligatorios.');
+      return;
     }
+    try {
+      setIsLoading(true);
+      let fotoURL = '';
+      let videoURL = '';
 
-    await addDoc(collection(firestore, 'reportes'), {
-      descripcion,
-      titulo,
-      estado,
-      fecha_reportes: Timestamp.now(),
-      foto: fotoURL,
-      video: videoURL,
-      comentario,
-      userId: user.uid,  // Añade el ID del usuario actual al reporte
-      coordenadas: {
-        latitud: location?.latitude || 0,
-        longitud: location?.longitude || 0,
-      },
-    });
+      for (const item of media) {
+        if (item.type === 'image') {
+          fotoURL = await uploadMedia(item.uri, 'image');
+        } else if (item.type === 'video') {
+          videoURL = await uploadMedia(item.uri, 'video');
+        }
+      }
 
-    alert('Reporte enviado exitosamente.');
-    setDescripcion('');
-    setTitulo('');
-    setComentario('');
-    setMedia([]);
-    fetchReportes();
-    setIsLoading(false);
-  } catch (error) {
-    console.error("Error al subir datos: ", error);
-    alert(`Error al subir datos: ${error.message}`);
-    setIsLoading(false);
-  }
-};
+      await addDoc(collection(firestore, 'reportes'), {
+        descripcion,
+        titulo,
+        estado,
+        fecha_reportes: Timestamp.now(),
+        foto: fotoURL,
+        video: videoURL,
+        comentario,
+        userId: user.uid,
+        coordenadas: {
+          latitud: location?.latitude || 0,
+          longitud: location?.longitude || 0,
+        },
+      });
+
+      alert('Reporte enviado exitosamente.');
+      setDescripcion('');
+      setTitulo('');
+      setComentario('');
+      setMedia([]);
+      fetchReportes();
+      setIsViewingReportes(true); // Cambia a la vista de reportes
+    } catch (error) {
+      console.error('Error al subir datos: ', error);
+      alert(`Error al subir datos: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
 useEffect(() => {
   // Redirige al login si el usuario no está autenticado
@@ -433,85 +435,91 @@ const renderReporte = ({ item }) => (
       {user && (
         <>
           {isViewingReportes ? (
-            <View>
-              <FlatList
-                data={reportes}
-                renderItem={renderReporte}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.reporteList}
-              />
-            </View>
+            <FlatList
+              data={reportes}
+              renderItem={renderReporte}
+              keyExtractor={(item) => item.id}
+            />
           ) : (
             <View>
-              <TextInput
-                style={styles.input}
-                placeholder="Título"
-                value={titulo}
-                onChangeText={setTitulo}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Descripción"
-                value={descripcion}
-                onChangeText={setDescripcion}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Comentario"
-                value={comentario}
-                onChangeText={setComentario}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Estado"
-                value={estado}
-                onChangeText={setEstado}
-              />
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Título</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Escribe el título del reporte"
+                  value={titulo}
+                  onChangeText={setTitulo}
+                />
+              </View>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Descripción</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Describe el problema"
+                  value={descripcion}
+                  onChangeText={setDescripcion}
+                />
+              </View>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Comentario</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Agrega un comentario adicional"
+                  value={comentario}
+                  onChangeText={setComentario}
+                />
+              </View>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Estado</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Estado del reporte"
+                  value={estado}
+                  onChangeText={setEstado}
+                />
+              </View>
+              <TouchableOpacity style={styles.mediaButton} onPress={pickMedia}>
+                <Text style={styles.mediaButtonText}>
+                  Seleccionar Imagen o Video
+                </Text>
+              </TouchableOpacity>
+              {media.length > 0 && (
+                <View style={styles.selectedMediaContainer}>
+                  {media.map((item, index) => (
+                    <Image
+                      key={index}
+                      source={{ uri: item.uri }}
+                      style={styles.selectedImage}
+                    />
+                  ))}
+                </View>
+              )}
               <TouchableOpacity style={styles.button} onPress={handleSubmit}>
                 <Text style={styles.buttonText}>Enviar Reporte</Text>
               </TouchableOpacity>
-
-              <Button title="Agregar Imagen o Video" onPress={pickMedia} />
-
-              {isLoading && <ActivityIndicator size="large" color="#0000ff" />}
-
-              {/* Mostrar imagen seleccionada si existe */}
-              {media.length > 0 && media[0].type === "image" && (
-                <Image source={{ uri: media[0].uri }} style={styles.selectedImage} />
-              )}
-
-              <FlatList
-                data={media}
-                renderItem={renderItem}
-                keyExtractor={(item) => item.uri}
-                contentContainerStyle={styles.mediaList}
-              />
             </View>
           )}
-
-          {/* Botón circular flotante */}
+  
           <TouchableOpacity
             style={styles.floatingButton}
-            onPress={() => {
-              console.log("Alternar vista: ", !isViewingReportes);
-              setIsViewingReportes(!isViewingReportes);
-            }}
+            onPress={() => setIsViewingReportes(!isViewingReportes)}
           >
             <Icon name="add-circle" size={60} color="#007bff" />
           </TouchableOpacity>
-          
-          {/* Modal para editar reportes */}
-          <EditModal
-            visible={isEditModalVisible}
-            onClose={() => setIsEditModalVisible(false)}
-            reporte={selectedReporte}
-            onSave={handleUpdateReporte}
-          />
         </>
       )}
+  
+      {/* Modal para editar reportes */}
+      <EditModal
+        visible={isEditModalVisible}
+        onClose={() => setIsEditModalVisible(false)}
+        reporte={selectedReporte}
+        onSave={handleUpdateReporte}
+      />
     </View>
   );
-};
+  
+  };
 
 const styles = StyleSheet.create({
   container: { 
@@ -531,24 +539,142 @@ const styles = StyleSheet.create({
       borderRadius: 8,
        marginBottom: 10 
       },
-  reporteTitle: { fontSize: 18, fontWeight: 'bold' },
-  reporteDescription: { fontSize: 16, marginBottom: 5 },
-  reporteEstado: { fontSize: 14, fontStyle: 'italic', color: '#555' },
-  reporteComentario: { fontSize: 14, color: '#333' },
-  reporteFecha: { fontSize: 14, color: '#777' },
-  updateButton: { backgroundColor: '#007bff', padding: 10, flexDirection: 'row', borderRadius: 8, alignItems: 'center', marginTop: 10 },
-  buttonText: { color: 'white', fontWeight: 'bold' },
-  modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' },
-  modalContent: { width: '90%', backgroundColor: '#fff', padding: 20, borderRadius: 10 },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 20 },
-  input: { height: 40, borderColor: 'gray', borderWidth: 1, marginBottom: 15, paddingHorizontal: 10, borderRadius: 5 },
-  button: { backgroundColor: '#28a745', padding: 12, borderRadius: 8, alignItems: 'center', marginBottom: 10 },
-  cancelButton: { backgroundColor: '#dc3545', padding: 10, borderRadius: 8, alignItems: 'center' },
-  cancelButtonText: { color: 'white', fontWeight: 'bold' },
-  reporteList: { paddingBottom: 10 },
-  buttonContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
-  deleteButton: { backgroundColor: '#dc3545', padding: 10, borderRadius: 8, alignItems: 'center',marginTop: 10 , flexDirection: 'row', },
-  icon: { marginRight: 5 }, 
+  reporteTitle: { 
+    fontSize: 18, 
+    fontWeight: 'bold'
+   },
+  reporteDescription: {
+     fontSize: 16,
+    marginBottom: 5
+     },
+  reporteEstado: { 
+    fontSize: 14,
+     fontStyle: 'italic',
+      color: '#555' 
+    },
+  reporteComentario: {
+     fontSize: 14,
+     color: '#333'
+     },
+  reporteFecha: { 
+    fontSize: 14,
+     color: '#777'
+     },
+  updateButton: {
+   backgroundColor: '#007bff',
+    padding: 10,
+     flexDirection: 'row', 
+     borderRadius: 8, 
+     alignItems: 'center', 
+     marginTop: 10
+     },
+  buttonText: { 
+    color: 'white',
+     fontWeight: 'bold'
+     },
+  modalContainer: {
+   flex: 1,
+    justifyContent: 'center',
+     alignItems: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)' 
+    },
+  modalContent: {
+     width: '90%', 
+     backgroundColor: '#fff',
+      padding: 20,
+       borderRadius: 10
+       },
+  modalTitle: {
+     fontSize: 20,
+      fontWeight: 'bold',
+       marginBottom: 20 
+      },
+      inputContainer: {
+        marginBottom: 15,
+      },
+      inputLabel: {
+        fontSize: 14,
+        color: '#555',
+        marginBottom: 5,
+        fontWeight: 'bold',
+      },
+      input: {
+        height: 50,
+        borderColor: '#ddd',
+        borderWidth: 1,
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        paddingHorizontal: 15,
+        fontSize: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
+      },
+      button: {
+        backgroundColor: '#007bff',
+        paddingVertical: 15,
+        borderRadius: 10,
+        alignItems: 'center',
+        marginBottom: 15,
+        flexDirection: 'row',
+        justifyContent: 'center',
+      },
+      buttonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 16,
+      },
+      mediaButton: {
+        backgroundColor: '#6c757d',
+        paddingVertical: 10,
+        borderRadius: 10,
+        alignItems: 'center',
+        marginBottom: 10,
+      },
+      mediaButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+      },  
+      selectedMediaContainer: {
+        marginTop: 10,
+      },
+      selectedImage: {
+        width: '100%',
+        height: 200,
+        borderRadius: 10,
+        marginTop: 10,
+      },  
+  cancelButton: {
+     backgroundColor: '#dc3545',
+      padding: 10,
+       borderRadius: 8,
+        alignItems: 'center'
+       },
+  cancelButtonText: { 
+    color: 'white',
+     fontWeight: 'bold'
+     },
+  reporteList: {
+     paddingBottom: 10 
+    },
+  buttonContainer: { 
+    flexDirection: 'row',
+     justifyContent: 'space-between',
+      marginTop: 10
+     },
+  deleteButton: { 
+    backgroundColor: '#dc3545', 
+    padding: 10, 
+    borderRadius: 8, 
+    alignItems: 'center',
+    marginTop: 10 , 
+    flexDirection: 'row',
+   },
+  icon: {
+     marginRight: 5
+     }, 
   estadoContainer: { 
     flexDirection: 'row', 
     justifyContent: 'space-around', 
