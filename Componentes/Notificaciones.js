@@ -1,177 +1,141 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
-import { collection, getFirestore, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
+import {
+  collection,
+  getFirestore,
+  getDocs,
+  doc,
+  updateDoc,
+  writeBatch,
+} from 'firebase/firestore';
 import { getApp } from 'firebase/app';
 
 const app = getApp();
 const firestore = getFirestore(app);
 
 const NotificacionesComponent = () => {
-  const [notificaciones, setNotificaciones] = useState([]);
-  const [reportes, setReportes] = useState([]);
+  const [items, setItems] = useState([]);
 
-  const fetchNotificaciones = async () => {
+  const fetchData = async () => {
     try {
-      const notificacionesSnapshot = await getDocs(collection(firestore, 'notificaciones'));
-      const notificacionesArray = await Promise.all(
-        notificacionesSnapshot.docs.map(async (notificacionDoc) => {
-          const notificacionData = notificacionDoc.data();
-          let nombre = 'Usuario desconocido';
-
-          if (notificacionData.userId) {
-            const userRef = doc(firestore, 'usuarios', notificacionData.userId);
-            const userDoc = await getDoc(userRef);
-            if (userDoc.exists()) {
-              nombre = userDoc.data().nombre || 'Usuario sin nombre';
-            }
-          }
-
-          return {
-            id: notificacionDoc.id,
-            ...notificacionData,
-            nombre,
-          };
-        })
+      // Obtener notificaciones
+      const notificacionesSnapshot = await getDocs(
+        collection(firestore, 'notificaciones')
       );
-      setNotificaciones(notificacionesArray);
-    } catch (error) {
-      console.error('Error al obtener las notificaciones:', error);
-    }
-  };
+      const notificacionesArray = notificacionesSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        tipo: 'notificacion',
+      }));
 
-  const fetchReportes = async () => {
-    try {
+      // Obtener reportes
       const reportesSnapshot = await getDocs(collection(firestore, 'reportes'));
-      const reportesArray = await Promise.all(
-        reportesSnapshot.docs.map(async (reporteDoc) => {
-          const reporteData = reporteDoc.data();
-          let nombre = 'Usuario desconocido';
+      const reportesArray = reportesSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        tipo: 'reporte',
+      }));
 
-          if (reporteData.userId) {
-            const userRef = doc(firestore, 'usuarios', reporteData.userId);
-            const userDoc = await getDoc(userRef);
-            if (userDoc.exists()) {
-              nombre = userDoc.data().nombre || 'Usuario sin nombre';
-            }
-          }
-
-          return {
-            id: reporteDoc.id,
-            ...reporteData,
-            nombre,
-          };
-        })
+      // Combinar y ordenar por fecha
+      const combinedArray = [...notificacionesArray, ...reportesArray].sort(
+        (a, b) => {
+          const fechaA = a.fecha_creacion?.toDate() || a.fecha_reportes?.toDate();
+          const fechaB = b.fecha_creacion?.toDate() || b.fecha_reportes?.toDate();
+          return fechaB - fechaA; // Más recientes primero
+        }
       );
-      setReportes(reportesArray);
+
+      setItems(combinedArray);
     } catch (error) {
-      console.error('Error al obtener los reportes:', error);
+      console.error('Error al obtener los datos:', error);
     }
   };
 
-  const marcarNotificacionComoLeida = async (id) => {
+  const marcarTodoComoLeido = async () => {
     try {
-      const notificacionRef = doc(firestore, 'notificaciones', id);
-      await updateDoc(notificacionRef, { leida: true });
-      setNotificaciones((prev) =>
-        prev.map((notif) =>
-          notif.id === id ? { ...notif, leida: true } : notif
-        )
-      );
-    } catch (error) {
-      console.error('Error al marcar notificación como leída:', error);
-    }
-  };
+      const batch = writeBatch(firestore);
 
-  const marcarReporteComoLeido = async (id) => {
-    try {
-      const reporteRef = doc(firestore, 'reportes', id);
-      await updateDoc(reporteRef, { leido: true });
-      setReportes((prev) =>
-        prev.map((reporte) =>
-          reporte.id === id ? { ...reporte, leido: true } : reporte
-        )
+      // Crear operaciones en el batch para cada elemento no leído
+      items.forEach((item) => {
+        if (item.tipo === 'notificacion' && !item.leida) {
+          const ref = doc(firestore, 'notificaciones', item.id);
+          batch.update(ref, { leida: true });
+        } else if (item.tipo === 'reporte' && !item.leido) {
+          const ref = doc(firestore, 'reportes', item.id);
+          batch.update(ref, { leido: true });
+        }
+      });
+
+      // Ejecutar el batch
+      await batch.commit();
+
+      // Actualizar el estado local
+      setItems((prev) =>
+        prev.map((item) => ({
+          ...item,
+          leida: item.tipo === 'notificacion' ? true : item.leida,
+          leido: item.tipo === 'reporte' ? true : item.leido,
+        }))
       );
+
+      Alert.alert('Éxito', 'Todas las notificaciones y reportes se han marcado como leídos.');
     } catch (error) {
-      console.error('Error al marcar reporte como leído:', error);
+      console.error('Error al marcar todo como leído:', error);
+      Alert.alert('Error', 'Hubo un problema al marcar todo como leído.');
     }
   };
 
   useEffect(() => {
-    fetchNotificaciones();
-    fetchReportes();
+    fetchData();
   }, []);
 
-  const renderNotificacion = ({ item }) => (
+  const renderItem = ({ item }) => (
     <View
       style={[
-        styles.notificacionItem,
-        item.leida ? styles.notificacionLeida : styles.notificacionNoLeida,
+        styles.itemContainer,
+        item.leida || item.leido
+          ? styles.itemLeido
+          : styles.itemNoLeido,
       ]}
     >
-      <Text style={styles.notificacionTitle}>{item.titulo}</Text>
-      <Text style={styles.notificacionText}>{item.mensaje}</Text>
-      {item.fecha_creacion && (
-        <Text style={styles.notificacionDate}>
-          Fecha: {item.fecha_creacion.toDate().toLocaleDateString()}
-        </Text>
-      )}
-      {!item.leida && (
-        <TouchableOpacity
-          style={styles.markAsReadButton}
-          onPress={() => marcarNotificacionComoLeida(item.id)}
-        >
-          <Text style={styles.markAsReadButtonText}>Marcar como leída</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-
-  const renderReporte = ({ item }) => (
-    <View
-      style={[
-        styles.notificacionItem,
-        item.leido ? styles.notificacionLeida : styles.notificacionNoLeida,
-      ]}
-    >
-      <Text style={styles.notificacionText}>
-        {`${item.nombre} reportó: ${item.titulo || 'Sin título'} - ${
-          item.descripcion || 'Sin descripción'
-        }`}
+      <Text style={styles.itemTitle}>
+        {item.tipo === 'notificacion' ? 'Notificación' : 'Reporte'}
       </Text>
-      {item.fecha_reportes && (
-        <Text style={styles.notificacionDate}>
-          Fecha: {item.fecha_reportes.toDate().toLocaleDateString()}
-        </Text>
-      )}
-      {!item.leido && (
-        <TouchableOpacity
-          style={styles.markAsReadButton}
-          onPress={() => marcarReporteComoLeido(item.id)}
-        >
-          <Text style={styles.markAsReadButtonText}>Marcar como leído</Text>
-        </TouchableOpacity>
-      )}
+      <Text style={styles.itemText}>
+        {item.titulo || 'Sin título'}
+        {item.tipo === 'reporte' && ` - ${item.descripcion || 'Sin descripción'}`}
+      </Text>
+      <Text style={styles.itemDate}>
+        Fecha:{' '}
+        {(item.fecha_creacion || item.fecha_reportes)?.toDate().toLocaleDateString() ||
+          'Sin fecha'}
+      </Text>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      <View>
-        <Text style={styles.sectionTitle}>Notificaciones</Text>
-        <FlatList
-          data={notificaciones}
-          renderItem={renderNotificacion}
-          keyExtractor={(item) => item.id}
-        />
-      </View>
-      <View>
-        <Text style={styles.sectionTitle}>Reportes</Text>
-        <FlatList
-          data={reportes}
-          renderItem={renderReporte}
-          keyExtractor={(item) => item.id}
-        />
-      </View>
+      <Text style={styles.sectionTitle}>Notificaciones y Reportes</Text>
+      <TouchableOpacity
+        style={styles.markAllAsReadButton}
+        onPress={marcarTodoComoLeido}
+      >
+        <Text style={styles.markAsReadButtonText}>
+          Marcar todo como leído
+        </Text>
+      </TouchableOpacity>
+      <FlatList
+        data={items}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+      />
     </View>
   );
 };
@@ -187,7 +151,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
   },
-  notificacionItem: {
+  itemContainer: {
     padding: 15,
     borderRadius: 10,
     marginBottom: 20,
@@ -197,31 +161,31 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
   },
-  notificacionNoLeida: {
+  itemNoLeido: {
     backgroundColor: '#e0f7fa',
   },
-  notificacionLeida: {
+  itemLeido: {
     backgroundColor: '#fff',
   },
-  notificacionTitle: {
+  itemTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 5,
   },
-  notificacionText: {
+  itemText: {
     fontSize: 14,
     marginBottom: 5,
     color: '#555',
   },
-  notificacionDate: {
+  itemDate: {
     fontSize: 12,
     color: '#888',
   },
-  markAsReadButton: {
-    marginTop: 10,
-    backgroundColor: '#007BFF',
-    paddingVertical: 8,
-    paddingHorizontal: 15,
+  markAllAsReadButton: {
+    marginBottom: 15,
+    backgroundColor: '#28a745',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 5,
   },
   markAsReadButtonText: {
