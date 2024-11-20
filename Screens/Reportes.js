@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Button, Modal, FlatList, Alert, ActivityIndicator, Image } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, Button, Modal, FlatList, Alert, ActivityIndicator, Image, ScrollView } from 'react-native';
 import { getFirestore, collection, getDocs, getDoc, doc,addDoc,Timestamp, updateDoc, deleteDoc } from 'firebase/firestore';
 import { getApp } from 'firebase/app';
 import * as ImagePicker from 'expo-image-picker';
@@ -11,6 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Video } from 'expo-av';
 import { getAuth } from 'firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
+import { Picker } from '@react-native-picker/picker';
 
 const app = getApp();
 const firestore = getFirestore(app);
@@ -116,8 +117,8 @@ const EditModal = ({ visible, onClose, reporte, onSave }) => {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={[styles.estadoButton, editEstado === 'Saludable' && styles.estadoButtonSelected]}
-              onPress={() => setEditEstado('Saludable')}
+              style={[styles.estadoButton, editEstado === 'Limpio' && styles.estadoButtonSelected]}
+              onPress={() => setEditEstado('Limpio')}
             >
               <Text style={styles.estadoButtonText}>Estable</Text>
             </TouchableOpacity>
@@ -368,6 +369,7 @@ const ReportContent = () => {
     }
   };
 
+  
 
 useEffect(() => {
   // Redirige al login si el usuario no está autenticado
@@ -375,6 +377,8 @@ useEffect(() => {
     navigation.navigate("LoginScreen");
   }
 }, [user]);
+
+
 
 const renderReporte = ({ item }) => (
     <View style={styles.reporteItem}>
@@ -441,7 +445,7 @@ const renderReporte = ({ item }) => (
               keyExtractor={(item) => item.id}
             />
           ) : (
-            <View>
+            <ScrollView contentContainerStyle={styles.scrollContent}>
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Título</Text>
                 <TextInput
@@ -471,12 +475,18 @@ const renderReporte = ({ item }) => (
               </View>
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Estado</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Estado del reporte"
-                  value={estado}
-                  onChangeText={setEstado}
-                />
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={estado}
+                    onValueChange={(itemValue) => setEstado(itemValue)}
+                    style={styles.picker}
+                  >
+                    <Picker.Item label="Seleccione un estado" value="" />
+                    <Picker.Item label="Grave" value="Grave" />
+                    <Picker.Item label="Leve" value="Leve" />
+                    <Picker.Item label="Limpio" value="Limpio" />
+                  </Picker>
+                </View>
               </View>
               <TouchableOpacity style={styles.mediaButton} onPress={pickMedia}>
                 <Text style={styles.mediaButtonText}>
@@ -497,9 +507,9 @@ const renderReporte = ({ item }) => (
               <TouchableOpacity style={styles.button} onPress={handleSubmit}>
                 <Text style={styles.buttonText}>Enviar Reporte</Text>
               </TouchableOpacity>
-            </View>
+            </ScrollView>
           )}
-  
+
           <TouchableOpacity
             style={styles.floatingButton}
             onPress={() => setIsViewingReportes(!isViewingReportes)}
@@ -508,7 +518,7 @@ const renderReporte = ({ item }) => (
           </TouchableOpacity>
         </>
       )}
-  
+
       {/* Modal para editar reportes */}
       <EditModal
         visible={isEditModalVisible}
@@ -518,8 +528,7 @@ const renderReporte = ({ item }) => (
       />
     </View>
   );
-  
-  };
+};
 
 const styles = StyleSheet.create({
   container: { 
@@ -711,6 +720,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 5,
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: 'gray',
+    borderRadius: 5,
+    marginBottom: 15,
+    marginVertical: 10,
+    overflow: 'hidden',
+    backgroundColor: 'white', // Asegúrate de que el fondo sea visible.
+  },
+  picker: {
+    height: 50,
+    width: '100%',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    backgroundColor: '#fff',
   },
   
 
