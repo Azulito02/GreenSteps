@@ -7,6 +7,7 @@ import MapContent from './MapContent';
 import ImagePickerComponent from '../Componentes/ImagePickerComponent';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AjustesScreen from './AjustesScreen';
+import AjustesScreenUser from './Usuarios/AjustesScreenUser';
 import Icon from 'react-native-vector-icons/Ionicons'; // He cambiado a 'Ionicons' para una apariencia más moderna
 
 export default function GreenSteps() {
@@ -64,7 +65,7 @@ export default function GreenSteps() {
       <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<ImagePickerComponent />)}>
         <Icon name="camera-outline" size={26} color="#1E88E5" />
       </TouchableOpacity>
-      <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<AjustesScreen />)}>
+      <TouchableOpacity style={styles.navButton} onPress={() => setActiveComponent(<AjustesScreenUser />)}>
         <Icon name="settings-outline" size={26} color="#1E88E5" />
       </TouchableOpacity>
     </>
