@@ -128,12 +128,9 @@ export default function LoginScreen({ navigation }) {
       </TouchableOpacity>
 
       <TouchableOpacity style={[styles.createButton, { backgroundColor: '#4CAF50' }]} onPress={() => handleCreateAccount('usuario')}>
-        <Text style={styles.buttonText}>Crear Cuenta como Usuario</Text>
+        <Text style={styles.buttonText}>Registrarse</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={[styles.createButton, { backgroundColor: '#FF6347' }]} onPress={() => handleCreateAccount('administrador')}>
-        <Text style={styles.buttonText}>Crear Cuenta como Administrador</Text>
-      </TouchableOpacity>
     </View>
   );
 }

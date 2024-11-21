@@ -21,9 +21,9 @@ export default function GreenSteps() {
         if (storedRole) {
           setUserRole(storedRole);
           if (storedRole === 'administrador') {
-            setActiveComponent(<NoticiasContent />);
-          } else {
             setActiveComponent(<ReportContent />);
+          } else {
+            setActiveComponent(<NoticiasContent />);
           }
         }
       } catch (error) {

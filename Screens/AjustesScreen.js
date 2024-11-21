@@ -1,44 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Switch, StyleSheet, TouchableOpacity, Image, TextInput, Button, ActivityIndicator, Alert, ScrollView } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { getFirestore, doc, getDoc, collection, addDoc, Timestamp } from 'firebase/firestore';
+import { getAuth, signOut } from 'firebase/auth';
 import { app } from '../bd/firebaseconfig';
+import LoginScreen from './LoginScreen';
 
 const AjustesScreen = () => {
-  const navigation = useNavigation(); // Para manejar la navegación
+  const navigation = useNavigation();
   const db = getFirestore(app);
+  const auth = getAuth(app);
 
-  // Estado para los ajustes
-  const [foto, setFoto] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Estado
   const [isNotificaciones, setIsNotificaciones] = useState(false);
-  const [idioma, setIdioma] = useState('es');
-
-  // Estado para el formulario de notificaciones
   const [mensaje, setMensaje] = useState('');
   const [titulo, setTitulo] = useState('');
   const [isSending, setIsSending] = useState(false);
 
-  // Obtener foto de perfil
-  useEffect(() => {
-    const fetchProfileImage = async () => {
-      try {
-        const userDoc = await getDoc(doc(db, 'usuarios', 'id')); // Reemplaza 'id' con el ID real del usuario
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          setFoto(data.foto); // Suponiendo que el campo es 'foto'
-        }
-      } catch (error) {
-        console.error('Error al obtener la foto de perfil:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchProfileImage();
-  }, []);
 
-  // Manejo del envío de notificaciones
   const handleSendNotification = async () => {
     if (!mensaje || !titulo) {
       Alert.alert('Error', 'Por favor, completa todos los campos.');
@@ -57,77 +37,52 @@ const AjustesScreen = () => {
       setTitulo('');
     } catch (error) {
       console.error('Error al enviar la notificación:', error);
-      Alert.alert('Error', `No se pudo enviar la notificación: ${error.message}`);
+      Alert.alert('Error', 'No se pudo enviar la notificación.');
     } finally {
       setIsSending(false);
     }
   };
 
-  const goToEstadisticas = () => {
-    navigation.navigate('HomeTabs', { screen: 'Estadísticas' });
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'LoginScreen' }],
+      });
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      Alert.alert('Error', 'No se pudo cerrar sesión.');
+    }
   };
+
+
+
+  const goToEstadisticas = () => navigation.navigate('HomeTabs', { screen: 'Estadísticas' });
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Ajustes</Text>
 
-      {/* Foto de perfil */}
-      <TouchableOpacity>
-        {isLoading ? (
-          <ActivityIndicator size="large" color="#0000ff" />
-        ) : (
-          <Image source={{ uri: foto }} style={styles.profileImage} />
-        )}
-      </TouchableOpacity>
 
-      {/* Configuración de Notificaciones */}
-      <View style={styles.setting}>
-        <Text>Notificaciones</Text>
-        <Switch
-          trackColor={{ false: "#767577", true: "#81b0ff" }}
-          thumbColor={isNotificaciones ? "#f5dd4b" : "#f4f3f4"}
-          onValueChange={() => setIsNotificaciones(!isNotificaciones)}
-          value={isNotificaciones}
-        />
-      </View>
-
-      {/* Configuración de Idioma */}
-      <View style={styles.setting}>
-        <Text>Idioma</Text>
-        <Picker
-          selectedValue={idioma}
-          style={{ height: 50, width: 150 }}
-          onValueChange={(itemValue) => setIdioma(itemValue)}
-        >
-          <Picker.Item label="Español" value="es" />
-          <Picker.Item label="Inglés" value="en" />
-          <Picker.Item label="Francés" value="fr" />
-        </Picker>
-      </View>
-
-      {/* Botón para ir a estadísticas */}
-      <Button title="Ir a Estadísticas" onPress={goToEstadisticas} />
+      <TouchableOpacity style={styles.statsButton} onPress={goToEstadisticas}>
+      <Icon name="stats-chart" size={20} color="#fff" style={styles.icon} />
+      <Text style={styles.buttonText}>Ir a Estadísticas</Text>
+    </TouchableOpacity>
 
       {/* Formulario de notificaciones */}
       <Text style={styles.subTitle}>Enviar Notificación</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Título"
-        value={titulo}
-        onChangeText={setTitulo}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Mensaje"
-        value={mensaje}
-        onChangeText={setMensaje}
-      />
+      <TextInput style={styles.input} placeholder="Título" value={titulo} onChangeText={setTitulo} />
+      <TextInput style={styles.input} placeholder="Mensaje" value={mensaje} onChangeText={setMensaje} />
       <TouchableOpacity style={styles.button} onPress={handleSendNotification} disabled={isSending}>
-        <Text style={styles.buttonText}>
-          {isSending ? 'Enviando...' : 'Enviar Notificación'}
-        </Text>
+        <Text style={styles.buttonText}>{isSending ? 'Enviando...' : 'Enviar Notificación'}</Text>
       </TouchableOpacity>
       {isSending && <ActivityIndicator size="large" color="#0000ff" />}
+
+      {/* Botón de cerrar sesión */}
+      <TouchableOpacity style={[styles.buttonsession, { backgroundColor: '#dc3545' }]} onPress={handleLogout}>
+        <Text style={styles.buttonText}>Cerrar Sesión</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 };
@@ -137,8 +92,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'flex-start',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    padding: 20,
   },
   title: {
     fontSize: 24,
@@ -148,8 +102,7 @@ const styles = StyleSheet.create({
   subTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 20,
-    marginBottom: 10,
+    marginVertical: 10,
   },
   profileImage: {
     width: 100,
@@ -181,12 +134,38 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 120,
     width: '100%',
+  },
+  buttonsession: {
+    backgroundColor: '#28a745',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 20,
+    width: '50%',
   },
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  statsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#007bff', // Color azul
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 20,
+    width: '50%',
+  },
+  icon: {
+    marginRight: 8, // Separación entre el ícono y el texto
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
 
