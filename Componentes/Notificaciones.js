@@ -110,8 +110,14 @@ const NotificacionesComponent = () => {
       </Text>
       <Text style={styles.itemText}>
         {item.titulo || 'Sin título'}
-        {item.tipo === 'reporte' && ` - ${item.descripcion || 'Sin descripción'}`}
       </Text>
+      {item.tipo === 'reporte' && (
+        <Text style={styles.itemDescription}>
+          {item.descripcion?.length > 50
+            ? `${item.descripcion.substring(0, 50)}...`
+            : item.descripcion || 'Sin descripción'}
+        </Text>
+      )}
       <Text style={styles.itemDate}>
         Fecha:{' '}
         {(item.fecha_creacion || item.fecha_reportes)?.toDate().toLocaleDateString() ||
@@ -193,6 +199,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  itemDescription: {
+    fontSize: 12,
+    color: '#777',
+    marginBottom: 5,
   },
 });
 

@@ -1,12 +1,11 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions, ActivityIndicator, Button, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import { app } from '../bd/firebaseconfig';
 import { jsPDF } from 'jspdf';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { captureRef } from 'react-native-view-shot';
 
 const EstadisticasScreen = () => {
   const db = getFirestore(app);
@@ -14,13 +13,9 @@ const EstadisticasScreen = () => {
   const [reportesPorUsuario, setReportesPorUsuario] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const usuariosChartRef = useRef();
-  const reportesChartRef = useRef();
-
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Obtener usuarios
         const usersSnapshot = await getDocs(collection(db, 'usuarios'));
         const usuariosData = {};
         let usuariosCount = 0;
@@ -31,7 +26,6 @@ const EstadisticasScreen = () => {
           usuariosCount += 1;
         });
 
-        // Obtener reportes
         const reportesSnapshot = await getDocs(collection(db, 'reportes'));
         const reportesPorUsuarioData = {};
         let reportesCount = 0;
@@ -46,7 +40,6 @@ const EstadisticasScreen = () => {
           }
         });
 
-        // Obtener artículos
         const articulosSnapshot = await getDocs(collection(db, 'articulos'));
         const articulosCount = articulosSnapshot.size;
 
@@ -56,7 +49,6 @@ const EstadisticasScreen = () => {
           reportes: reportesCount,
         });
 
-        // Procesar datos para reportes por usuario
         setReportesPorUsuario(Object.keys(reportesPorUsuarioData)
           .map(userId => ({
             usuario: usuariosData[userId],
@@ -74,26 +66,13 @@ const EstadisticasScreen = () => {
     fetchData();
   }, []);
 
-  // Función para generar PDF
-  const generatePDF = async (chartRef, title, data) => {
+  const generatePDF = async (title, data) => {
     try {
-      const uri = await captureRef(chartRef, {
-        format: "png",
-        quality: 1,
-        width: Dimensions.get('window').width - 30,
-        height: 220,
-      });
-
       const doc = new jsPDF();
       doc.text(title, 10, 10);
 
-      const chartImage = await FileSystem.readAsStringAsync(uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      doc.addImage(`data:image/png;base64,${chartImage}`, "PNG", 10, 20, 180, 100);
-
       data.forEach((item, index) => {
-        doc.text(`${item.label}: ${item.value}`, 10, 130 + index * 10);
+        doc.text(`${item.label}: ${item.value}`, 10, 20 + index * 10);
       });
 
       const pdfBase64 = doc.output('datauristring').split(',')[1];
@@ -123,56 +102,52 @@ const EstadisticasScreen = () => {
       ) : (
         <>
           <Text style={styles.subtitle}>Estadísticas Generales</Text>
-          <View ref={usuariosChartRef} style={styles.chartContainer}>
-            <PieChart
-              data={[
-                { name: 'Usuarios', population: data.usuarios, color: '#FF6384', legendFontColor: "#7F7F7F", legendFontSize: 12 },
-                { name: 'Artículos', population: data.articulos, color: '#36A2EB', legendFontColor: "#7F7F7F", legendFontSize: 12 },
-                { name: 'Reportes', population: data.reportes, color: '#FFCE56', legendFontColor: "#7F7F7F", legendFontSize: 12 }
-              ]}
-              width={Dimensions.get('window').width - 30}
-              height={220}
-              chartConfig={{
-                backgroundColor: '#1cc910',
-                backgroundGradientFrom: '#eff3ff',
-                backgroundGradientTo: '#efefef',
-                decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(0, 123, 255, ${opacity})`,
-              }}
-              accessor="population"
-              backgroundColor="transparent"
-            />
-          </View>
-          <CustomButton title="Generar PDF" onPress={() => generatePDF(usuariosChartRef, 'Estadísticas Generales', [
+          <PieChart
+            data={[
+              { name: 'Usuarios', population: data.usuarios, color: '#FF6384', legendFontColor: "#7F7F7F", legendFontSize: 12 },
+              { name: 'Artículos', population: data.articulos, color: '#36A2EB', legendFontColor: "#7F7F7F", legendFontSize: 12 },
+              { name: 'Reportes', population: data.reportes, color: '#FFCE56', legendFontColor: "#7F7F7F", legendFontSize: 12 }
+            ]}
+            width={Dimensions.get('window').width - 30}
+            height={220}
+            chartConfig={{
+              backgroundColor: '#1cc910',
+              backgroundGradientFrom: '#eff3ff',
+              backgroundGradientTo: '#efefef',
+              decimalPlaces: 0,
+              color: (opacity = 1) => `rgba(0, 123, 255, ${opacity})`,
+            }}
+            accessor="population"
+            backgroundColor="transparent"
+          />
+          <CustomButton title="Generar PDF de Estadísticas Generales" onPress={() => generatePDF('Estadísticas Generales', [
             { label: 'Usuarios', value: data.usuarios },
             { label: 'Artículos', value: data.articulos },
             { label: 'Reportes', value: data.reportes },
           ])} />
 
           <Text style={styles.subtitle}>Reportes por Usuario</Text>
-          <View ref={reportesChartRef} style={styles.chartContainer}>
-            <PieChart
-              data={reportesPorUsuario.map(item => ({
-                name: item.usuario,
-                population: item.cantidad,
-                color: `hsl(${Math.random() * 360}, 70%, 60%)`, // Color aleatorio
-                legendFontColor: "#7F7F7F",
-                legendFontSize: 12
-              }))}
-              width={Dimensions.get('window').width - 30}
-              height={220}
-              chartConfig={{
-                backgroundColor: '#FF5733',
-                backgroundGradientFrom: '#eff3ff',
-                backgroundGradientTo: '#efefef',
-                decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(0, 123, 255, ${opacity})`,
-              }}
-              accessor="population"
-              backgroundColor="transparent"
-            />
-          </View>
-          <CustomButton title="Generar PDF" onPress={() => generatePDF(reportesChartRef, 'Reportes por Usuario', reportesPorUsuario.map(item => ({
+          <PieChart
+            data={reportesPorUsuario.map(item => ({
+              name: item.usuario,
+              population: item.cantidad,
+              color: `hsl(${Math.random() * 360}, 70%, 60%)`,
+              legendFontColor: "#7F7F7F",
+              legendFontSize: 12
+            }))}
+            width={Dimensions.get('window').width - 30}
+            height={220}
+            chartConfig={{
+              backgroundColor: '#FF5733',
+              backgroundGradientFrom: '#eff3ff',
+              backgroundGradientTo: '#efefef',
+              decimalPlaces: 0,
+              color: (opacity = 1) => `rgba(0, 123, 255, ${opacity})`,
+            }}
+            accessor="population"
+            backgroundColor="transparent"
+          />
+          <CustomButton title="Generar PDF de Reportes por Usuario" onPress={() => generatePDF('Reportes por Usuario', reportesPorUsuario.map(item => ({
             label: item.usuario,
             value: item.cantidad,
           })))} />
@@ -184,15 +159,9 @@ const EstadisticasScreen = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'flex-start',
     padding: 10,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
+    backgroundColor: '#fff',
   },
   subtitle: {
     fontSize: 20,
@@ -200,8 +169,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 10,
   },
-  chartContainer: {
-    marginBottom: 20,
+  text: {
+    fontSize: 16,
+    marginVertical: 5,
   },
   button: {
     backgroundColor: '#007BFF',

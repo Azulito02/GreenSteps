@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Switch, StyleSheet, TouchableOpacity, Image, TextInput, Button, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
-import { getFirestore, doc, getDoc, collection, addDoc, Timestamp } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, Timestamp } from 'firebase/firestore';
 import { getAuth, signOut } from 'firebase/auth';
 import { app } from '../bd/firebaseconfig';
-import LoginScreen from './LoginScreen';
 
 const AjustesScreen = () => {
   const navigation = useNavigation();
@@ -13,11 +12,9 @@ const AjustesScreen = () => {
   const auth = getAuth(app);
 
   // Estado
-  const [isNotificaciones, setIsNotificaciones] = useState(false);
   const [mensaje, setMensaje] = useState('');
   const [titulo, setTitulo] = useState('');
   const [isSending, setIsSending] = useState(false);
-
 
   const handleSendNotification = async () => {
     if (!mensaje || !titulo) {
@@ -56,24 +53,33 @@ const AjustesScreen = () => {
     }
   };
 
-
-
   const goToEstadisticas = () => navigation.navigate('HomeTabs', { screen: 'Estadísticas' });
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Ajustes</Text>
 
-
       <TouchableOpacity style={styles.statsButton} onPress={goToEstadisticas}>
-      <Icon name="stats-chart" size={20} color="#fff" style={styles.icon} />
-      <Text style={styles.buttonText}>Ir a Estadísticas</Text>
-    </TouchableOpacity>
+        <Icon name="stats-chart" size={20} color="#fff" style={styles.icon} />
+        <Text style={styles.buttonText}>Ir a Estadísticas</Text>
+      </TouchableOpacity>
 
       {/* Formulario de notificaciones */}
       <Text style={styles.subTitle}>Enviar Notificación</Text>
-      <TextInput style={styles.input} placeholder="Título" value={titulo} onChangeText={setTitulo} />
-      <TextInput style={styles.input} placeholder="Mensaje" value={mensaje} onChangeText={setMensaje} />
+      <TextInput
+        style={[styles.input, styles.multilineInput]}
+        placeholder="Título"
+        value={titulo}
+        onChangeText={setTitulo}
+      />
+      <TextInput
+        style={[styles.input, styles.multilineInput]}
+        placeholder="Mensaje"
+        value={mensaje}
+        onChangeText={setMensaje}
+        multiline={true}
+        numberOfLines={4}
+      />
       <TouchableOpacity style={styles.button} onPress={handleSendNotification} disabled={isSending}>
         <Text style={styles.buttonText}>{isSending ? 'Enviando...' : 'Enviar Notificación'}</Text>
       </TouchableOpacity>
@@ -104,23 +110,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginVertical: 10,
   },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 20,
-  },
-  setting: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-  },
   input: {
-    height: 40,
     borderColor: 'gray',
     borderWidth: 1,
     marginBottom: 10,
@@ -129,12 +119,16 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: '#fff',
   },
+  multilineInput: {
+    height: 100, // Altura para mensajes largos
+    textAlignVertical: 'top', // Alinea el texto al principio
+  },
   button: {
     backgroundColor: '#28a745',
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 120,
+    marginBottom: 20,
     width: '100%',
   },
   buttonsession: {
@@ -148,6 +142,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
+    fontSize: 16,
   },
   statsButton: {
     flexDirection: 'row',
@@ -161,11 +156,6 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginRight: 8, // Separación entre el ícono y el texto
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
   },
 });
 

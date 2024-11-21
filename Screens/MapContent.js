@@ -6,6 +6,7 @@ import * as Location from 'expo-location';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getFirestore } from 'firebase/firestore';
 import { getApp } from 'firebase/app';
 
+
 const app = getApp();
 const firestore = getFirestore(app);
 
@@ -21,6 +22,7 @@ const MapContent = ({ route }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedPinId, setSelectedPinId] = useState(null);
 
+  // Solicitar permisos de ubicación
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -32,24 +34,26 @@ const MapContent = ({ route }) => {
     })();
   }, []);
 
-  useEffect(() => {
-    const fetchMarkers = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(firestore, 'marcadores'));
-        const loadedMarkers = [];
-        querySnapshot.forEach((doc) => {
-          loadedMarkers.push({ id: doc.id, ...doc.data() });
-        });
-        setMarkers(loadedMarkers);
-        setLoadingMarkers(false);
-      } catch (error) {
-        console.error('Error al cargar los marcadores:', error);
-      }
-    };
+  // Cargar marcadores desde Firebase
+  const fetchMarkers = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(firestore, 'marcadores'));
+      const loadedMarkers = [];
+      querySnapshot.forEach((doc) => {
+        loadedMarkers.push({ id: doc.id, ...doc.data() });
+      });
+      setMarkers(loadedMarkers);
+      setLoadingMarkers(false);
+    } catch (error) {
+      console.error('Error al cargar los marcadores:', error);
+    }
+  };
 
+  useEffect(() => {
     fetchMarkers();
   }, []);
 
+  // Centrar en la ubicación del usuario
   const centerOnUserLocation = async () => {
     if (!hasLocationPermission) {
       Alert.alert('Permiso de ubicación no otorgado');
@@ -73,6 +77,7 @@ const MapContent = ({ route }) => {
     }
   };
 
+  // Manejar clic en el mapa para agregar un nuevo pin
   const handleMapPress = (event) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
 
@@ -88,6 +93,7 @@ const MapContent = ({ route }) => {
     );
   };
 
+  // Agregar un nuevo pin a Firebase y al estado local
   const addNewPin = async (latitude, longitude, severity) => {
     const newMarker = { latitude, longitude, severity };
 
@@ -97,9 +103,11 @@ const MapContent = ({ route }) => {
       console.log('Pin guardado exitosamente en Firestore');
     } catch (error) {
       console.error('Error al guardar el pin:', error);
+      Alert.alert('Error', 'No se pudo guardar el pin en la base de datos.');
     }
   };
 
+  // Obtener el color del pin según la severidad
   const getPinColor = (severity) => {
     switch (severity) {
       case 'red':
@@ -113,11 +121,13 @@ const MapContent = ({ route }) => {
     }
   };
 
+  // Manejar clic en un marcador
   const handleMarkerPress = (id) => {
     setSelectedPinId(id);
     setShowModal(true);
   };
 
+  // Cambiar el color de un pin
   const changePinColor = async (id, newSeverity) => {
     try {
       const markerDoc = doc(firestore, 'marcadores', id);
@@ -134,6 +144,7 @@ const MapContent = ({ route }) => {
     setShowModal(false);
   };
 
+  // Eliminar un pin
   const deletePin = async (id) => {
     try {
       const markerDoc = doc(firestore, 'marcadores', id);
@@ -145,6 +156,30 @@ const MapContent = ({ route }) => {
     }
     setShowModal(false);
   };
+
+  useEffect(() => {
+    if (route?.params?.latitude && route?.params?.longitude) {
+      const { latitude, longitude } = route.params;
+  
+      const existingPin = markers.find(
+        (marker) =>
+          marker.latitude === latitude &&
+          marker.longitude === longitude
+      );
+  
+      if (!existingPin) {
+        addNewPin(latitude, longitude, 'blue');
+      }
+  
+      // Centrar el mapa en el nuevo pin
+      mapRef.current?.animateToRegion({
+        latitude,
+        longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      });
+    }
+  }, [route?.params]);
 
   return (
     <View style={styles.mapContainer}>

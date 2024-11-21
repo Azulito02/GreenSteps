@@ -44,7 +44,6 @@ const NoticiasContentUser = () => {
             <Text style={styles.cardDescription}>{noticia.descripcion}</Text>
           )}
           <View style={styles.cardFooter}>
-            <Text style={styles.cardDate}>Publicado el: {new Date(noticia.fecha).toLocaleDateString()}</Text>
             <Icon name="arrow-forward-circle-outline" size={20} color="#007bff" />
           </View>
         </View>

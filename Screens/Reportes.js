@@ -7,6 +7,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
 import Icon from 'react-native-vector-icons/Ionicons'; // Agregar esta línea
 import * as Location from 'expo-location';
+import MapContent from './MapContent';
 import { useNavigation } from '@react-navigation/native';
 import { Video } from 'expo-av';
 import { getAuth } from 'firebase/auth';
@@ -188,9 +189,14 @@ const ReportContent = () => {
     }
   };
   
-  const openMap = (latitude, longitude) => {
+  //const openMap = (latitude, longitude) => {
+   // navigation.navigate('Mapa', { latitude, longitude });
+ // };//
+
+   const MapContent = (latitude, longitude) => {
     navigation.navigate('Mapa', { latitude, longitude });
   };
+
 
   useEffect(() => {
     fetchReportes();
@@ -398,7 +404,7 @@ const renderReporte = ({ item }) => (
       
       <Text
         style={[styles.reporteText, { color: 'blue' }]}
-        onPress={() => openMap(item.coordenadas.latitud, item.coordenadas.longitud)}
+        onPress={() => MapContent(item.coordenadas.latitud, item.coordenadas.longitud)}
       >
         Ver en el mapa
       </Text>
